@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Planogramme partagé - ShelfRx</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --teal-50: #F0FDFA;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-300: #CBD5E1;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --white: #FFFFFF;
+        }
+        body { font-family: 'DM Sans', sans-serif; color: var(--slate-700); background: var(--slate-100); min-height: 100vh; }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+
+        /* ---- TOPBAR ---- */
+        .topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--slate-200);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--slate-900);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .topbar-pill { background: var(--teal); color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; }
+        .topbar-badge {
+            background: var(--teal-50);
+            color: var(--teal-dark);
+            font-size: 0.7rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* ---- ACTION BAR ---- */
+        .action-bar {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .action-bar-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        .action-bar-right { display: flex; align-items: center; gap: 0.5rem; }
+
+        /* ---- BUTTONS ---- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-primary { background: var(--teal); color: white; }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-secondary { background: var(--white); color: var(--slate-700); border: 1px solid var(--slate-300); }
+        .btn-secondary:hover { background: var(--slate-100); }
+        .btn-teal-outline { background: var(--teal-50); color: var(--teal-dark); border: 1.5px solid var(--teal); }
+        .btn-teal-outline:hover { background: var(--teal); color: white; }
+
+        /* ---- COPY LINK ---- */
+        #copyLinkBtn.copied {
+            background: var(--teal);
+            color: white;
+            border-color: var(--teal);
+        }
+
+        /* ---- PLANOGRAM CONTENT ---- */
+        .planogram-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem 2rem;
+        }
+
+        /* ---- INFO HEADER ---- */
+        .info-header {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .info-header-left h2 { font-size: 1.2rem; margin-bottom: 0.3rem; }
+        .info-header-left p { font-size: 0.82rem; color: var(--slate-500); }
+        .info-header-meta { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+        .info-meta-item { text-align: center; }
+        .info-meta-item .label { font-size: 0.7rem; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .info-meta-item .value { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--slate-900); margin-top: 0.15rem; }
+
+        /* ---- STATS ---- */
+        .planogram-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--teal); }
+        .stat-label { font-size: 0.75rem; color: var(--slate-500); margin-top: 0.2rem; }
+
+        /* ---- MAIN LAYOUT ---- */
+        .planogram-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* ---- PLANOGRAM VISUAL ---- */
+        .planogram-visual {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 16px;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+        .planogram-visual svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+        /* ---- SIDEBAR ---- */
+        .sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+        .sidebar-card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .sidebar-card h4 {
+            font-size: 0.85rem;
+            color: var(--slate-900);
+            margin-bottom: 0.85rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--slate-100);
+        }
+
+        /* ---- PRODUCT LEGEND ---- */
+        .product-legend { display: flex; flex-direction: column; gap: 0.5rem; }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.45rem 0.65rem;
+            border-radius: 8px;
+            background: var(--slate-50);
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .legend-dot.high { background: var(--teal); }
+        .legend-dot.medium { background: var(--amber); }
+        .legend-dot.low { background: var(--slate-300); }
+        .legend-info { flex: 1; min-width: 0; }
+        .legend-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .legend-meta { font-size: 0.7rem; color: var(--slate-500); }
+        .legend-count {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--slate-900);
+            flex-shrink: 0;
+        }
+        .legend-divider { border: none; border-top: 1px solid var(--slate-100); margin: 0.25rem 0; }
+
+        /* ---- CTA CARD ---- */
+        .cta-card {
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            color: white;
+        }
+        .cta-card h4 { color: white; font-size: 1rem; margin-bottom: 0.5rem; }
+        .cta-card p { font-size: 0.8rem; opacity: 0.85; margin-bottom: 1.25rem; line-height: 1.5; }
+        .cta-card .btn { background: white; color: var(--teal-dark); width: 100%; justify-content: center; }
+        .cta-card .btn:hover { background: var(--teal-50); }
+
+        /* ---- SHELF DIMENSIONS ---- */
+        .shelf-dims { display: flex; flex-direction: column; gap: 0.75rem; }
+        .shelf-dim-row { display: flex; justify-content: space-between; align-items: center; }
+        .shelf-dim-label { font-size: 0.8rem; color: var(--slate-500); }
+        .shelf-dim-value { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--slate-900); font-size: 0.9rem; }
+
+        /* ---- LOADING ---- */
+        .loading { display: flex; flex-direction: column; align-items: center; padding: 4rem; }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--slate-200); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { margin-top: 1rem; color: var(--slate-400); font-size: 0.9rem; }
+
+        /* ---- ERROR ---- */
+        .error-state { text-align: center; padding: 4rem 2rem; }
+        .error-state-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .error-state h3 { color: var(--slate-900); margin-bottom: 0.5rem; }
+        .error-state p { color: var(--slate-500); margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+
+        /* ---- TOAST ---- */
+        #toast {
+            display: none;
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--slate-900);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* ---- TABLET (900px and below) ---- */
+        @media (max-width: 900px) {
+            .planogram-layout { grid-template-columns: 1fr; }
+            .planogram-stats { grid-template-columns: repeat(2, 1fr); }
+            .action-bar {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+            .action-bar-left,
+            .action-bar-right {
+                width: 100%;
+                justify-content: center;
+            }
+            .action-bar .btn {
+                flex: 1;
+                min-width: 140px;
+            }
+        }
+
+        /* ---- MOBILE (768px and below) ---- */
+        @media (max-width: 768px) {
+            .topbar {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                align-items: flex-start;
+            }
+            .topbar-logo {
+                font-size: 1rem;
+            }
+            .topbar-badge {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.5rem;
+                flex-shrink: 0;
+            }
+            .action-bar {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.75rem;
+                background: var(--slate-50);
+            }
+            .action-bar-left,
+            .action-bar-right {
+                width: 100%;
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+            }
+            .action-bar-left {
+                justify-content: flex-start;
+            }
+            .action-bar-right {
+                justify-content: flex-end;
+            }
+            .action-bar .btn {
+                padding: 0.5rem 0.9rem;
+                font-size: 0.75rem;
+                flex: 1;
+                min-height: 40px;
+            }
+            .planogram-content {
+                padding: 0 0.75rem 1.25rem;
+            }
+            .info-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem;
+                gap: 0.75rem;
+            }
+            .info-header-left h2 {
+                font-size: 1.05rem;
+            }
+            .info-header-left p {
+                font-size: 0.8rem;
+            }
+            .info-header-meta {
+                width: 100%;
+                gap: 0.6rem;
+                justify-content: flex-start;
+            }
+            .info-meta-item {
+                text-align: left;
+                flex: 1;
+                min-width: 100px;
+            }
+            .info-meta-item .label {
+                font-size: 0.65rem;
+            }
+            .info-meta-item .value {
+                font-size: 0.85rem;
+            }
+            .planogram-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+                margin-bottom: 1.25rem;
+            }
+            .stat-card {
+                padding: 0.75rem;
+            }
+            .stat-value {
+                font-size: 1.4rem;
+            }
+            .stat-label {
+                font-size: 0.7rem;
+            }
+            .planogram-visual {
+                padding: 1rem;
+                border-radius: 12px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .planogram-visual svg {
+                max-width: 100%;
+                height: auto;
+                min-width: 300px;
+            }
+            .sidebar {
+                gap: 1rem;
+            }
+            .sidebar-card {
+                padding: 1rem;
+                border-radius: 10px;
+            }
+            .sidebar-card h4 {
+                font-size: 0.8rem;
+                margin-bottom: 0.75rem;
+            }
+            .product-legend {
+                gap: 0.4rem;
+            }
+            .legend-item {
+                padding: 0.4rem 0.5rem;
+            }
+            .legend-dot {
+                width: 8px;
+                height: 8px;
+            }
+            .legend-name {
+                font-size: 0.75rem;
+            }
+            .legend-meta {
+                font-size: 0.65rem;
+            }
+            .legend-count {
+                font-size: 0.8rem;
+            }
+            .cta-card {
+                padding: 1.25rem 1rem;
+                border-radius: 10px;
+            }
+            .cta-card h4 {
+                font-size: 0.95rem;
+                margin-bottom: 0.4rem;
+            }
+            .cta-card p {
+                font-size: 0.75rem;
+                margin-bottom: 1rem;
+            }
+            .cta-card .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+                min-height: 40px;
+            }
+            .shelf-dims {
+                gap: 0.6rem;
+            }
+            .shelf-dim-label {
+                font-size: 0.75rem;
+            }
+            .shelf-dim-value {
+                font-size: 0.85rem;
+            }
+            #toast {
+                bottom: 1rem;
+                left: 0.5rem;
+                right: 0.5rem;
+                width: auto;
+                transform: none;
+                font-size: 0.8rem;
+                padding: 0.6rem 1rem;
+            }
+        }
+
+        /* ---- SMALL MOBILE (480px and below) ---- */
+        @media (max-width: 480px) {
+            .topbar {
+                padding: 0.6rem 0.5rem;
+            }
+            .topbar-logo {
+                font-size: 0.85rem;
+                gap: 0.2rem;
+            }
+            .topbar-pill {
+                font-size: 0.5rem;
+                padding: 0.08rem 0.2rem;
+            }
+            .topbar-badge {
+                font-size: 0.6rem;
+                padding: 0.15rem 0.4rem;
+            }
+            .action-bar {
+                padding: 0.5rem;
+                gap: 0.4rem;
+            }
+            .action-bar-left,
+            .action-bar-right {
+                gap: 0.4rem;
+            }
+            .action-bar .btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.7rem;
+                flex: 1;
+                min-height: 40px;
+            }
+            .planogram-content {
+                padding: 0 0.5rem 1rem;
+            }
+            .info-header {
+                padding: 0.75rem;
+                gap: 0.5rem;
+            }
+            .info-header-left h2 {
+                font-size: 1rem;
+            }
+            .info-header-left p {
+                font-size: 0.75rem;
+            }
+            .info-header-meta {
+                gap: 0.4rem;
+            }
+            .info-meta-item {
+                min-width: 80px;
+            }
+            .info-meta-item .label {
+                font-size: 0.6rem;
+            }
+            .info-meta-item .value {
+                font-size: 0.8rem;
+            }
+            .planogram-stats {
+                grid-template-columns: 1fr;
+                gap: 0.6rem;
+            }
+            .stat-card {
+                padding: 0.6rem;
+            }
+            .stat-value {
+                font-size: 1.3rem;
+            }
+            .stat-label {
+                font-size: 0.65rem;
+            }
+            .planogram-visual {
+                padding: 0.75rem;
+                border-radius: 10px;
+            }
+            .planogram-visual svg {
+                min-width: 280px;
+            }
+            .sidebar {
+                gap: 0.75rem;
+            }
+            .sidebar-card {
+                padding: 0.75rem;
+            }
+            .sidebar-card h4 {
+                font-size: 0.75rem;
+                margin-bottom: 0.5rem;
+            }
+            .product-legend {
+                gap: 0.3rem;
+            }
+            .legend-item {
+                padding: 0.3rem 0.4rem;
+            }
+            .legend-dot {
+                width: 6px;
+                height: 6px;
+            }
+            .legend-name {
+                font-size: 0.7rem;
+            }
+            .legend-meta {
+                font-size: 0.6rem;
+            }
+            .legend-count {
+                font-size: 0.75rem;
+            }
+            .cta-card {
+                padding: 1rem 0.75rem;
+            }
+            .cta-card h4 {
+                font-size: 0.9rem;
+                margin-bottom: 0.3rem;
+            }
+            .cta-card p {
+                font-size: 0.7rem;
+                margin-bottom: 0.75rem;
+                line-height: 1.4;
+            }
+            .cta-card .btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.75rem;
+                min-height: 40px;
+            }
+            .shelf-dims {
+                gap: 0.5rem;
+            }
+            .shelf-dim-label {
+                font-size: 0.7rem;
+            }
+            .shelf-dim-value {
+                font-size: 0.8rem;
+            }
+            .loading {
+                padding: 2rem 1rem;
+            }
+            .spinner {
+                width: 32px;
+                height: 32px;
+            }
+            .loading p {
+                font-size: 0.8rem;
+            }
+            .error-state {
+                padding: 2rem 1rem;
+            }
+            .error-state-icon {
+                font-size: 2.5rem;
+                margin-bottom: 0.75rem;
+            }
+            .error-state h3 {
+                font-size: 1rem;
+                margin-bottom: 0.3rem;
+            }
+            .error-state p {
+                font-size: 0.85rem;
+            }
+        }
+        @media print {
+            .topbar, .action-bar, .cta-card, #toast, .sidebar .btn, .action-bar .btn { display: none !important; }
+            body { background: white; }
+            .planogram-content { padding: 0; max-width: 100%; }
+            .planogram-visual { border: 1px solid #ccc; }
+            .info-header { border: 1px solid #ccc; }
+            .sidebar-card h4 { border-bottom-color: #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <a class="topbar-logo" href="/">ShelfRx <span class="topbar-pill">BETA</span></a>
+        <div class="topbar-badge">
+            <span>&#128279;</span> Planogramme partagé
+        </div>
+    </div>
+
+    <!-- ACTION BAR -->
+    <div class="action-bar" id="actionBar" style="display:none;">
+        <div class="action-bar-left">
+            <button class="btn btn-secondary" id="copyLinkBtn" onclick="copyShareLink()">
+                &#128203; Copier le lien
+            </button>
+            <button class="btn btn-secondary" onclick="window.print()">
+                &#128424; Imprimer / PDF
+            </button>
+            <button class="btn btn-teal-outline" onclick="downloadPNG()">
+                &#128247; Télécharger PNG
+            </button>
+        </div>
+        <div class="action-bar-right">
+            <a href="/app" class="btn btn-primary">+ Créer mon planogramme</a>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <!-- MAIN CONTENT -->
+    <div class="planogram-content" id="mainContent">
+        <div class="loading" id="loadingState">
+            <div class="spinner"></div>
+            <p>Chargement du planogramme...</p>
+        </div>
+    </div>
+
+    <script>
+    // Get share ID from URL path
+    const shareId = window.location.pathname.split('/app/planogram/')[1] || '';
+
+    // Lightweight analytics tracking (fire-and-forget)
+    function getDeviceId() {
+        let id = localStorage.getItem('shelfrx_device_id');
+        if (!id) {
+            id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('shelfrx_device_id', id);
+        }
+        return id;
+    }
+    function track(event, metadata) {
+        try {
+            fetch('/api/analytics/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_type: event, device_id: getDeviceId(), metadata: metadata || {} })
+            }).catch(() => {});
+        } catch (e) { /* non-blocking */ }
+    }
+
+    function showToast(msg, duration = 2500) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, duration);
+    }
+
+    async function copyShareLink() {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            const btn = document.getElementById('copyLinkBtn');
+            btn.classList.add('copied');
+            btn.innerHTML = '&#10003; Lien copié !';
+            showToast('Lien copié dans le presse-papiers');
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = '&#128203; Copier le lien';
+            }, 2500);
+        } catch (err) {
+            showToast('Impossible de copier le lien automatiquement');
+        }
+    }
+
+    async function downloadPNG() {
+        const captureEl = document.getElementById('pngCapture');
+        if (!captureEl) return;
+        try {
+            showToast('Génération de l\'image PNG...');
+            const canvas = await html2canvas(captureEl, {
+                scale: 2,
+                backgroundColor: '#F1F5F9',
+                useCORS: true,
+                logging: false
+            });
+            const link = document.createElement('a');
+            link.download = `planogramme-${shareId.substring(0, 8)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('PNG téléchargé !');
+        } catch (err) {
+            console.error('PNG export failed:', err);
+            showToast('Échec de l\'export PNG');
+        }
+    }
+
+    function formatDate(isoStr) {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function formatDims(width, height, depth) {
+        const parts = [];
+        if (width) parts.push(`${width} cm de large`);
+        if (height) parts.push(`${height} cm de haut`);
+        if (depth) parts.push(`${depth} cm de profond`);
+        return parts.join(' · ');
+    }
+
+    function escHtml(s) {
+        if (s == null) return '';
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    function escSvg(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function renderPlanogramSVG(planogram) {
+        const { shelves, dimensions } = planogram;
+        const { shelf_width, num_shelves, shelf_unit_height } = dimensions;
+
+        // ── Layout constants ──────────────────────────────────────────────
+        const padding    = 45;
+        const labelWidth = 100;
+        const scale      = Math.min(6.5, 720 / shelf_width);
+        const depthBadgeH = 13;
+        const shelfGap    = 2;
+
+        const svgWidth  = shelf_width * scale + padding * 2 + labelWidth;
+        const svgHeight = num_shelves * (shelf_unit_height * scale + shelfGap) + padding * 2 + 42;
+
+        // ── Per-product color palette ─────────────────────────────────────
+        const palette = [
+            '#0D9488','#3B82F6','#8B5CF6','#EC4899','#EF4444',
+            '#F97316','#10B981','#06B6D4','#FBBF24','#84CC16',
+            '#6366F1','#14B8A6','#F43F5E','#A855F7','#0EA5E9'
+        ];
+        const productColorMap = {};
+        let colorIdx = 0;
+        shelves.forEach(shelf => {
+            shelf.items.forEach(item => {
+                const pid = String(item.product_id || item.id || item.name);
+                if (!productColorMap[pid]) {
+                    productColorMap[pid] = palette[colorIdx % palette.length];
+                    colorIdx++;
+                }
+            });
+        });
+
+        // ── SVG scaffold ──────────────────────────────────────────────────
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width:100%;height:auto;">`;
+        svg += `<rect width="${svgWidth}" height="${svgHeight}" fill="#F1F5F9" rx="8"/>`;
+        svg += `<text x="${svgWidth/2}" y="27" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#0F172A">Disposition du rayon \u2014 ${shelf_width}\u00d7${Math.round(shelf_unit_height * num_shelves)} cm, ${num_shelves} \u00e9tag\u00e8re${num_shelves > 1 ? 's' : ''}</text>`;
+
+        const startX     = padding + labelWidth;
+        const startY     = padding;
+        const shelfUnitPx = shelf_unit_height * scale + shelfGap;
+
+        shelves.forEach((shelf, i) => {
+            const y      = startY + i * shelfUnitPx;
+            const shelfH = shelf_unit_height * scale;
+            const innerH = shelfH - depthBadgeH - 2;
+
+            svg += `<rect x="${startX}" y="${y}" width="${shelf_width * scale}" height="${shelfH}" fill="${shelf.isEyeLevel ? '#ECFDF5' : '#FAFAFA'}" stroke="#D1D5DB" stroke-width="0.75"/>`;
+
+            if (shelf.isEyeLevel) {
+                svg += `<text x="${startX - 5}" y="${y + 12}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7.5" fill="#0D9488" font-weight="700">NIV.</text>`;
+                svg += `<text x="${startX - 5}" y="${y + 21}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7.5" fill="#0D9488" font-weight="700">YEUX</text>`;
+            }
+
+            const totalUnits = shelf.items.reduce((s, it) => s + it.facings * (it.stack || 1) * (it.depth || 1), 0);
+            svg += `<text x="${startX - 5}" y="${y + shelfH/2 - 5}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="9.5" font-weight="700" fill="#1E293B">Rayon ${i + 1}</text>`;
+            svg += `<text x="${startX - 5}" y="${y + shelfH/2 + 8}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7.5" fill="#64748B">${totalUnits} produits</text>`;
+
+            let xOffset = 0;
+            shelf.items.forEach(item => {
+                const pid          = String(item.product_id || item.id || item.name);
+                const productColor = productColorMap[pid] || '#94A3B8';
+                const facingCount  = item.facings || 1;
+                const stackCount   = item.stack   || 1;
+                const depth        = item.depth   || 1;
+                const fW           = item.width * scale;
+                const sH           = Math.max(8, (innerH - (stackCount - 1)) / stackCount);
+
+                for (let f = 0; f < facingCount; f++) {
+                    const facingX = startX + (xOffset + f * item.width) * scale;
+                    const boxW    = Math.max(4, fW - 1);
+
+                    if (depth > 1) {
+                        svg += `<text x="${facingX + fW/2}" y="${y + shelfH - 2}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="6.5" font-weight="700" fill="${productColor}">\u00d7${depth}P</text>`;
+                    }
+
+                    for (let s = 0; s < stackCount; s++) {
+                        const boxH      = Math.max(4, sH - 1);
+                        const finalBoxY = y + innerH - (s + 1) * sH;
+
+                        if (item.image_url && boxW > 10 && boxH > 10) {
+                            svg += `<rect x="${facingX + 0.5}" y="${finalBoxY}" width="${boxW}" height="${boxH}" fill="white" stroke="${productColor}" stroke-width="1" rx="1"/>`;
+                            svg += `<image href="${item.image_url}" x="${facingX + 1.5}" y="${finalBoxY + 1}" width="${boxW - 2}" height="${boxH - 2}" preserveAspectRatio="xMidYMid meet"/>`;
+                            if (f === 0 && s === 0 && boxH > 18 && boxW > 18) {
+                                const labelH = Math.min(14, boxH * 0.35);
+                                const barY   = finalBoxY + boxH - labelH;
+                                svg += `<rect x="${facingX + 0.5}" y="${barY}" width="${boxW}" height="${labelH}" fill="${productColor}" opacity="0.88" rx="0"/>`;
+                                const maxC  = Math.max(2, Math.floor(fW * facingCount / 5.5));
+                                const dName = item.name.length > maxC ? item.name.substring(0, maxC - 1) + '.' : item.name;
+                                const fs    = Math.min(8, Math.max(5.5, fW * facingCount / Math.max(dName.length, 3) * 0.55));
+                                svg += `<text x="${facingX + fW * facingCount / 2}" y="${barY + labelH - 2}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="${fs}" fill="white" font-weight="600">${escSvg(dName)}</text>`;
+                            }
+                        } else {
+                            svg += `<rect x="${facingX + 0.5}" y="${finalBoxY}" width="${boxW}" height="${boxH}" fill="${productColor}" stroke="rgba(255,255,255,0.6)" stroke-width="0.75" rx="1"/>`;
+                            if (f === 0 && s === 0 && boxW > 14 && boxH > 10) {
+                                const maxC  = Math.max(2, Math.floor(fW * facingCount / 5));
+                                const dName = item.name.length > maxC ? item.name.substring(0, maxC - 1) + '.' : item.name;
+                                const fs    = Math.min(8.5, Math.max(5.5, fW * facingCount / Math.max(dName.length, 3) * 0.6));
+                                svg += `<text x="${facingX + fW * facingCount / 2}" y="${finalBoxY + boxH/2 + fs * 0.38}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="${fs}" fill="white" font-weight="700">${escSvg(dName)}</text>`;
+                            }
+                            if (s === stackCount - 1 && stackCount > 1 && boxW > 14) {
+                                svg += `<text x="${facingX + fW/2}" y="${finalBoxY + 7}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="6" fill="rgba(255,255,255,0.75)">\u00d7${stackCount}H</text>`;
+                            }
+                        }
+                    }
+                }
+                xOffset += item.totalWidth;
+            });
+
+            svg += `<line x1="${startX}" y1="${y + shelfH}" x2="${startX + shelf_width * scale}" y2="${y + shelfH}" stroke="#475569" stroke-width="2.5"/>`;
+        });
+
+        const frameH = num_shelves * shelfUnitPx - shelfGap;
+        svg += `<rect x="${startX}" y="${startY}" width="${shelf_width * scale}" height="${frameH}" fill="none" stroke="#1E293B" stroke-width="1.5"/>`;
+
+        const legendY = svgHeight - 22;
+        svg += `<text x="${startX}" y="${legendY - 8}" font-family="DM Sans, sans-serif" font-size="8" fill="#94A3B8">L\u00e9gende :</text>`;
+        const legendProducts = [];
+        shelves.forEach(shelf => shelf.items.forEach(item => {
+            const pid = String(item.product_id || item.id || item.name);
+            if (!legendProducts.find(lp => lp.pid === pid)) legendProducts.push({ pid, name: item.name, color: productColorMap[pid] });
+        }));
+        let lx = startX + 52;
+        legendProducts.slice(0, 7).forEach(lp => {
+            svg += `<rect x="${lx}" y="${legendY - 10}" width="9" height="9" fill="${lp.color}" rx="1.5"/>`;
+            const nm = lp.name.length > 16 ? lp.name.substring(0, 15) + '.' : lp.name;
+            svg += `<text x="${lx + 12}" y="${legendY - 2}" font-family="DM Sans, sans-serif" font-size="7.5" fill="#475569">${escSvg(nm)}</text>`;
+            lx += Math.max(68, nm.length * 5 + 20);
+            if (lx > svgWidth - 60) return;
+        });
+        svg += `<text x="${svgWidth - padding + 5}" y="${legendY - 2}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7" fill="#94A3B8">L=Largeur P=Profondeur H=Hauteur</text>`;
+
+        svg += '</svg>';
+        return svg;
+    }
+
+    async function loadPlanogram() {
+        if (!shareId) {
+            renderError('Lien invalide', 'Cet URL n\'est pas valide. Demandez un nouveau lien au pharmacien.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/shared/${encodeURIComponent(shareId)}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                renderError('Planogramme introuvable', data.error || 'Ce lien a expiré ou le planogramme n\'existe plus.');
+                return;
+            }
+
+            renderPlanogram(data);
+            track('shared_link_viewed', { share_id: shareId });
+        } catch (err) {
+            console.error('Load failed:', err);
+            renderError('Erreur de chargement', 'Impossible de charger le planogramme. Vérifiez votre connexion.');
+        }
+    }
+
+    function renderPlanogram(data) {
+        document.getElementById('actionBar').style.display = 'flex';
+        document.getElementById('loadingState').style.display = 'none';
+
+        const planogram = typeof data.planogram === 'string' ? JSON.parse(data.planogram) : data.planogram;
+        const dims = planogram.dimensions;
+        const summary = planogram.summary;
+
+        // Collect all products from shelves for the legend
+        const allProducts = [];
+        planogram.shelves.forEach(shelf => {
+            shelf.items.forEach(item => {
+                if (!allProducts.find(p => p.name === item.name)) {
+                    allProducts.push(item);
+                }
+            });
+        });
+
+        // Category labels
+        const categoryLabels = {
+            otc: 'Médicaments OTC',
+            vitamins: 'Vitamines',
+            skincare: 'Soins de la peau',
+            hygiene: 'Hygiène',
+            baby: 'Puériculture',
+            prescriptions: 'Ordonnances',
+            dental: 'Dentaire',
+            first_aid: 'Premiers secours',
+            other: 'Autre'
+        };
+        const catLabel = data.category ? (categoryLabels[data.category] || data.category) : '';
+
+        const today = formatDate(new Date().toISOString());
+
+        document.getElementById('mainContent').innerHTML = `
+            <div id="pngCapture">
+                <!-- Info Header -->
+                <div class="info-header">
+                    <div class="info-header-left">
+                        <h2>${escHtml(data.name || 'Planogramme')}</h2>
+                        <p>Généré le ${today} · ${catLabel ? catLabel + ' · ' : ''}ShelfRx</p>
+                    </div>
+                    <div class="info-header-meta">
+                        <div class="info-meta-item">
+                            <div class="label">Dimensions</div>
+                            <div class="value">${dims.shelf_width} × ${dims.shelf_height} cm</div>
+                        </div>
+                        <div class="info-meta-item">
+                            <div class="label">Niveaux</div>
+                            <div class="value">${dims.num_shelves}</div>
+                        </div>
+                        <div class="info-meta-item">
+                            <div class="label">Profondeur</div>
+                            <div class="value">${dims.shelf_depth} cm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="planogram-stats">
+                    <div class="stat-card"><div class="stat-value">${summary.total_products}</div><div class="stat-label">Total produits</div></div>
+                    <div class="stat-card"><div class="stat-value">${summary.products_placed}</div><div class="stat-label">Produits placés</div></div>
+                    <div class="stat-card"><div class="stat-value">${summary.total_facings}</div><div class="stat-label">Total facings</div></div>
+                    <div class="stat-card"><div class="stat-value">${summary.utilization_percent}%</div><div class="stat-label">Utilisation</div></div>
+                </div>
+
+                <!-- Main layout -->
+                <div class="planogram-layout">
+                    <!-- Planogram SVG -->
+                    <div class="planogram-visual">
+                        ${renderPlanogramSVG(planogram)}
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="sidebar">
+                        <!-- Product legend -->
+                        <div class="sidebar-card">
+                            <h4>&#128203; Liste des produits</h4>
+                            <div class="product-legend" id="productLegend"></div>
+                        </div>
+
+                        <!-- Shelf dimensions -->
+                        <div class="sidebar-card">
+                            <h4>&#128207; Dimensions du rayon</h4>
+                            <div class="shelf-dims">
+                                <div class="shelf-dim-row">
+                                    <span class="shelf-dim-label">Largeur</span>
+                                    <span class="shelf-dim-value">${dims.shelf_width} cm</span>
+                                </div>
+                                <div class="shelf-dim-row">
+                                    <span class="shelf-dim-label">Hauteur totale</span>
+                                    <span class="shelf-dim-value">${dims.shelf_height} cm</span>
+                                </div>
+                                <div class="shelf-dim-row">
+                                    <span class="shelf-dim-label">Profondeur</span>
+                                    <span class="shelf-dim-value">${dims.shelf_depth} cm</span>
+                                </div>
+                                <div class="shelf-dim-row">
+                                    <span class="shelf-dim-label">Nombre de niveaux</span>
+                                    <span class="shelf-dim-value">${dims.num_shelves}</span>
+                                </div>
+                                <div class="shelf-dim-row">
+                                    <span class="shelf-dim-label">Hauteur par niveau</span>
+                                    <span class="shelf-dim-value">${dims.shelf_unit_height} cm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA -->
+                        <div class="cta-card">
+                            <h4>Créez vos propres planogrammes</h4>
+                            <p>ShelfRx vous aide à organiser vos rayons de pharmacie en quelques minutes. Essai gratuit 7 jours — puis 79 €/mois.</p>
+                            <a href="/app" class="btn">Commencer mon essai gratuit →</a>
+                        </div>
+                    </div>
+                </div>
+
+                ${summary.not_placed && summary.not_placed.length > 0 ? `
+                <div style="background: var(--amber-light); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 1rem; margin-top: 1.25rem;">
+                    <h4 style="font-size:0.85rem; color:#92400E; margin-bottom:0.5rem;">Produits non placés</h4>
+                    <ul style="font-size:0.8rem; color:#92400E; margin-left:1.25rem; line-height:1.7;">
+                        ${summary.not_placed.map(p => `<li><strong>${escHtml(p.name)}</strong> - ${escHtml(p.reason)}</li>`).join('')}
+                    </ul>
+                </div>` : ''}
+            </div>
+        `;
+
+        // Render product legend sorted by priority
+        const priorityOrder = ['high', 'medium', 'low'];
+        const legendEl = document.getElementById('productLegend');
+        let legendHtml = '';
+
+        priorityOrder.forEach(prio => {
+            const prods = allProducts.filter(p => p.priority === prio);
+            prods.forEach((p, i) => {
+                if (i === 0) {
+                    const label = { high: 'Priorité haute', medium: 'Priorité moyenne', low: 'Priorité basse' }[prio];
+                    legendHtml += `<hr class="legend-divider"><div style="font-size:0.7rem;color:var(--slate-500);font-weight:600;margin:0.5rem 0 0.25rem;">${label}</div>`;
+                }
+                legendHtml += `
+                    <div class="legend-item">
+                        <div class="legend-dot ${p.priority}"></div>
+                        <div class="legend-info">
+                            <div class="legend-name" title="${escHtml(p.name)}">${escHtml(p.name)}</div>
+                            <div class="legend-meta">${p.facings} facing${p.facings > 1 ? 's' : ''}</div>
+                        </div>
+                        <div class="legend-count">${p.quantity}</div>
+                    </div>
+                `;
+            });
+        });
+
+        legendEl.innerHTML = legendHtml || '<p style="font-size:0.8rem;color:var(--slate-400);text-align:center;">Aucun produit</p>';
+    }
+
+    function renderError(title, msg) {
+        document.getElementById('actionBar').style.display = 'none';
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('mainContent').innerHTML = `
+            <div class="error-state">
+                <div class="error-state-icon">&#128533;</div>
+                <h3>${escHtml(title)}</h3>
+                <p>${escHtml(msg)}</p>
+                <a href="/app" class="btn btn-primary" style="text-decoration:none;">Créer mon planogramme</a>
+            </div>
+        `;
+    }
+
+    // Init
+    loadPlanogram();
+    </script>
+</body>
+</html>

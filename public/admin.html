@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfRx — Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --teal: #0D9488; --teal-dark: #0F766E; --teal-light: #CCFBF1; --teal-50: #F0FDFA; --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B; --slate-400: #94A3B8; --slate-300: #CBD5E1; --slate-200: #E2E8F0; --slate-100: #F1F5F9; --amber: #F59E0B; --amber-light: #FEF3C7; --red: #EF4444; --red-light: #FEE2E2; --green: #10B981; --green-light: #D1FAE5; --purple: #8B5CF6; --purple-light: #EDE9FE; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--slate-100); min-height: 100vh; }
+        h1,h2,h3,h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+        .topbar { background: white; border-bottom: 1px solid var(--slate-200); padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+        .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--slate-900); text-decoration: none; }
+        .admin-badge { background: var(--slate-900); color: white; font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; }
+        .content { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+        .page-title { font-size: 1.6rem; margin-bottom: 0.5rem; }
+        .page-sub { color: var(--slate-500); font-size: 0.9rem; margin-bottom: 2rem; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .kpi-card { background: white; border-radius: 12px; border: 1px solid var(--slate-200); padding: 1.25rem; }
+        .kpi-label { font-size: 0.75rem; color: var(--slate-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--slate-900); }
+        .kpi-value.teal { color: var(--teal-dark); }
+        .kpi-value.green { color: var(--green); }
+        .kpi-value.amber { color: var(--amber); }
+        .kpi-value.purple { color: var(--purple); }
+        .kpi-sub { font-size: 0.75rem; color: var(--slate-400); margin-top: 0.25rem; }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+        .table-card { background: white; border-radius: 12px; border: 1px solid var(--slate-200); overflow: hidden; margin-bottom: 2rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: var(--slate-50, #f8fafc); padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; color: var(--slate-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--slate-200); }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--slate-100); color: var(--slate-700); }
+        tr:last-child td { border-bottom: none; }
+        .status-pill { display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 600; }
+        .status-trial { background: var(--amber-light); color: #92400e; }
+        .status-active { background: var(--green-light); color: #065f46; }
+        .status-expired { background: var(--red-light); color: #b91c1c; }
+        .status-cancelled { background: var(--slate-200); color: var(--slate-500); }
+        .status-past_due { background: var(--purple-light); color: #5b21b6; }
+        .error-box { background: var(--red-light); border: 1px solid #fca5a5; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; color: #b91c1c; font-size: 0.9rem; }
+        .loading { text-align: center; padding: 3rem; color: var(--slate-400); }
+        .auth-box { background: white; border-radius: 16px; border: 1px solid var(--slate-200); padding: 2rem; max-width: 400px; margin: 4rem auto; }
+        .auth-title { font-size: 1.2rem; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--slate-700); margin-bottom: 0.35rem; }
+        .form-input { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--slate-300); border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; }
+        .form-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+        .btn { padding: 0.65rem 1.25rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-primary { background: var(--teal); color: white; }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .refresh-btn { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-300); cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+        .refresh-btn:hover { background: var(--slate-200); }
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+        @media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+
+<!-- Auth Gate -->
+<div id="authGate" style="background: var(--slate-100); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="auth-box">
+        <h2 class="auth-title">🔒 Admin ShelfRx</h2>
+        <p style="color: var(--slate-500); font-size: 0.85rem; margin-bottom: 1.5rem;">Accès réservé à l'équipe interne.</p>
+        <div class="form-group">
+            <label class="form-label">Mot de passe admin</label>
+            <input class="form-input" type="password" id="adminSecret" placeholder="Entrer le mot de passe">
+        </div>
+        <div style="color: var(--red); font-size: 0.8rem; margin-bottom: 0.75rem; display: none;" id="authErr">Mot de passe incorrect</div>
+        <button class="btn btn-primary" onclick="authLogin()">Accéder →</button>
+    </div>
+</div>
+
+<!-- Dashboard (hidden until auth) -->
+<div id="dashboard" style="display: none;">
+    <div class="topbar">
+        <a href="/" class="logo">ShelfRx</a>
+        <span class="admin-badge">ADMIN</span>
+        <span style="flex: 1;"></span>
+        <button class="refresh-btn" onclick="loadStats()">↻ Actualiser</button>
+    </div>
+
+    <div class="content">
+        <h1 class="page-title">Dashboard Admin</h1>
+        <p class="page-sub" id="lastUpdated">Chargement...</p>
+
+        <div id="errorBox" class="error-box" style="display: none;"></div>
+
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card"><div class="kpi-label">Chargement</div><div class="kpi-value">—</div></div>
+        </div>
+
+        <div class="section-header">
+            <h3 class="section-title" style="margin-bottom: 0;">Dernières inscriptions</h3>
+        </div>
+        <div class="table-card">
+            <div id="userTable" class="loading">Chargement...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let adminSecret = localStorage.getItem('shelfrx_admin_secret') || '';
+
+function authLogin() {
+    const val = document.getElementById('adminSecret').value.trim();
+    if (!val) return;
+    adminSecret = val;
+    loadStats();
+}
+
+document.getElementById('adminSecret').addEventListener('keydown', e => {
+    if (e.key === 'Enter') authLogin();
+});
+
+// Auto-try if saved
+if (adminSecret) loadStats();
+
+async function loadStats() {
+    try {
+        const r = await fetch(`/api/admin/stats?secret=${encodeURIComponent(adminSecret)}`);
+        if (r.status === 401) {
+            document.getElementById('authErr').style.display = 'block';
+            localStorage.removeItem('shelfrx_admin_secret');
+            return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+        localStorage.setItem('shelfrx_admin_secret', adminSecret);
+        document.getElementById('authGate').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('errorBox').style.display = 'none';
+
+        const d = await r.json();
+        renderDashboard(d);
+    } catch (err) {
+        document.getElementById('errorBox').textContent = `Erreur : ${err.message}`;
+        document.getElementById('errorBox').style.display = 'block';
+    }
+}
+
+function renderDashboard(d) {
+    document.getElementById('lastUpdated').textContent = `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
+
+    document.getElementById('kpiGrid').innerHTML = `
+        <div class="kpi-card">
+            <div class="kpi-label">Total inscrits</div>
+            <div class="kpi-value teal">${d.total_registrations}</div>
+            <div class="kpi-sub">Pharmacies inscrites</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Ce mois-ci</div>
+            <div class="kpi-value green">${d.new_this_month}</div>
+            <div class="kpi-sub">Nouvelles inscriptions</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Cette semaine</div>
+            <div class="kpi-value amber">${d.new_this_week}</div>
+            <div class="kpi-sub">Nouvelles inscriptions</div>
+        </div>
+    `;
+
+    if (!d.recent_users || d.recent_users.length === 0) {
+        document.getElementById('userTable').innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--slate-400);">Aucune inscription encore</div>';
+        return;
+    }
+
+    const rows = d.recent_users.map(u => {
+        const statusMap = {
+            trial: '<span class="status-pill status-trial">Essai</span>',
+            active: '<span class="status-pill status-active">Abonné</span>',
+            expired: '<span class="status-pill status-expired">Expiré</span>',
+            cancelled: '<span class="status-pill status-cancelled">Annulé</span>',
+            past_due: '<span class="status-pill status-past_due">Impayé</span>',
+        };
+        const status = getEffectiveStatus(u);
+        const pill = statusMap[status] || `<span class="status-pill status-expired">${status}</span>`;
+        const date = new Date(u.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+        const trialEnd = u.trial_ends_at
+            ? new Date(u.trial_ends_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+            : '—';
+        return `<tr>
+            <td><strong>${esc(u.name || '')}</strong><br><small style="color: var(--slate-400);">${esc(u.email)}</small></td>
+            <td>${esc(u.pharmacy_name || '—')}</td>
+            <td>${pill}</td>
+            <td>${trialEnd}</td>
+            <td>${date}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('userTable').innerHTML = `
+        <table>
+            <thead><tr><th>Utilisateur</th><th>Pharmacie</th><th>Statut</th><th>Fin essai</th><th>Inscrit le</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+}
+
+function getEffectiveStatus(u) {
+    if (u.subscription_status === 'active') return 'active';
+    if (u.trial_ends_at && new Date(u.trial_ends_at) > new Date()) return 'trial';
+    if (u.subscription_status === 'cancelled') return 'cancelled';
+    if (u.subscription_status === 'past_due') return 'past_due';
+    return 'expired';
+}
+
+function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

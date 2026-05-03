@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Analytiques - ShelfRx</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --teal-50: #F0FDFA;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --green: #10B981;
+            --green-light: #D1FAE5;
+            --purple: #8B5CF6;
+            --purple-light: #EDE9FE;
+            --blue: #3B82F6;
+            --blue-light: #DBEAFE;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-300: #CBD5E1;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --white: #FFFFFF;
+        }
+        body { font-family: 'DM Sans', sans-serif; color: var(--slate-700); background: var(--slate-100); min-height: 100vh; }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+
+        /* ── TOPBAR ── */
+        .topbar { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .topbar-logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--slate-900); text-decoration: none; display: flex; align-items: center; gap: 0.4rem; }
+        .topbar-pill { background: var(--teal); color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; }
+        .topbar-nav { display: flex; align-items: center; gap: 0.25rem; }
+        .topbar-nav-link { font-size: 0.82rem; color: var(--slate-500); text-decoration: none; padding: 0.4rem 0.6rem; border-radius: 6px; transition: all 0.15s; font-weight: 500; }
+        .topbar-nav-link:hover { background: var(--slate-100); color: var(--slate-700); }
+        .topbar-nav-link.active { background: var(--teal-50); color: var(--teal-dark); }
+        .user-pill { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--slate-500); cursor: pointer; position: relative; }
+        .user-pill-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-dd { position: absolute; top: calc(100% + 0.5rem); right: 0; background: white; border: 1px solid var(--slate-200); border-radius: 10px; padding: 0.5rem; min-width: 200px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: none; z-index: 100; }
+        .user-dd.open { display: block; }
+        .user-dd-item { padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; color: var(--slate-700); transition: background 0.1s; }
+        .user-dd-item:hover { background: var(--slate-100); }
+
+        /* ── CONTENT ── */
+        .content { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── BREADCRUMB ── */
+        .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--slate-400); margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .breadcrumb-link { color: var(--teal); cursor: pointer; text-decoration: none; font-weight: 500; }
+        .breadcrumb-link:hover { text-decoration: underline; }
+        .breadcrumb-sep { color: var(--slate-300); }
+
+        /* ── PAGE HEADER ── */
+        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .page-sub { color: var(--slate-500); font-size: 0.875rem; }
+
+        /* ── PERIOD TABS ── */
+        .period-tabs { display: flex; background: var(--slate-200); border-radius: 8px; padding: 3px; gap: 2px; }
+        .period-tab { padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--slate-500); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .period-tab.active { background: var(--white); color: var(--slate-900); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+        /* ── KPI CARDS ── */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .kpi-card { background: var(--white); border-radius: 12px; border: 1px solid var(--slate-200); padding: 1.25rem 1.5rem; }
+        .kpi-label { font-size: 0.72rem; color: var(--slate-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.9rem; font-weight: 700; color: var(--slate-900); line-height: 1; }
+        .kpi-value.teal { color: var(--teal-dark); }
+        .kpi-value.green { color: var(--green); }
+        .kpi-value.amber { color: var(--amber); }
+        .kpi-value.purple { color: var(--purple); }
+        .kpi-sub { font-size: 0.75rem; color: var(--slate-400); margin-top: 0.4rem; display: flex; align-items: center; gap: 0.3rem; }
+        .kpi-delta-up { color: var(--green); font-weight: 600; }
+        .kpi-delta-down { color: var(--red); font-weight: 600; }
+
+        /* ── SECTION CARD ── */
+        .section-card { background: var(--white); border-radius: 12px; border: 1px solid var(--slate-200); margin-bottom: 1.5rem; overflow: hidden; }
+        .section-card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--slate-100); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+        .section-card-title { font-size: 0.95rem; font-weight: 600; color: var(--slate-900); }
+        .section-card-sub { font-size: 0.8rem; color: var(--slate-400); }
+
+        /* ── TABLE ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 0.7rem 1rem; text-align: left; font-size: 0.72rem; color: var(--slate-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--slate-200); white-space: nowrap; }
+        td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--slate-100); color: var(--slate-700); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr.clickable:hover td { background: var(--teal-50); cursor: pointer; }
+        .drill-arrow { color: var(--slate-300); font-size: 1rem; }
+        tr.clickable:hover .drill-arrow { color: var(--teal); }
+
+        /* ── PERFORMANCE BADGE ── */
+        .perf-badge { display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 600; }
+        .perf-high { background: var(--green-light); color: #065f46; }
+        .perf-medium { background: var(--amber-light); color: #92400e; }
+        .perf-low { background: var(--red-light); color: #b91c1c; }
+        .perf-ok { background: var(--blue-light); color: #1e40af; }
+
+        /* ── PROGRESS BAR ── */
+        .progress-wrap { display: flex; align-items: center; gap: 0.6rem; }
+        .progress-bar { flex: 1; height: 6px; background: var(--slate-200); border-radius: 3px; overflow: hidden; min-width: 60px; }
+        .progress-fill { height: 100%; border-radius: 3px; background: var(--teal); }
+        .progress-fill.amber { background: var(--amber); }
+        .progress-fill.red { background: var(--red); }
+        .progress-pct { font-size: 0.78rem; color: var(--slate-500); white-space: nowrap; width: 32px; text-align: right; }
+
+        /* ── MINI SPARKLINE ── */
+        .spark { width: 80px; height: 28px; }
+
+        /* ── CHARTS GRID ── */
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+        @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+        .chart-card { background: var(--white); border-radius: 12px; border: 1px solid var(--slate-200); padding: 1.5rem; }
+        .chart-title { font-size: 0.9rem; font-weight: 600; color: var(--slate-900); margin-bottom: 1rem; }
+        .chart-wrap { position: relative; }
+
+        /* ── HEATMAP ── */
+        .heatmap-wrap { overflow-x: auto; }
+        .heatmap-shelf { display: flex; gap: 3px; margin-bottom: 6px; align-items: center; }
+        .heatmap-label { font-size: 0.72rem; color: var(--slate-400); width: 64px; flex-shrink: 0; text-align: right; padding-right: 8px; font-weight: 500; }
+        .heatmap-cells { display: flex; gap: 3px; flex-wrap: nowrap; }
+        .heatmap-cell { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; color: white; flex-shrink: 0; cursor: default; transition: transform 0.15s; }
+        .heatmap-cell:hover { transform: scale(1.15); }
+        .heatmap-legend { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.72rem; color: var(--slate-400); }
+        .heatmap-legend-gradient { height: 8px; width: 80px; border-radius: 4px; background: linear-gradient(to right, #e2e8f0, #0D9488); }
+
+        /* ── EMPTY / LOADING ── */
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--slate-400); }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        .empty-title { font-size: 1rem; font-weight: 600; color: var(--slate-600); margin-bottom: 0.5rem; }
+        .empty-sub { font-size: 0.85rem; }
+        .loading-state { text-align: center; padding: 3rem; color: var(--slate-400); }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--slate-200); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── DEMO BANNER ── */
+        .demo-banner { background: var(--amber-light); border: 1px solid #fcd34d; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; color: #92400e; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            .content { padding: 1rem; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .topbar-nav { display: none; }
+            .page-header { flex-direction: column; }
+        }
+        @media (max-width: 400px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── UTILS ── */
+        .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all 0.15s; text-decoration: none; }
+        .btn-primary { background: var(--teal); color: white; }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-secondary { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-300); }
+        .btn-secondary:hover { background: var(--slate-200); }
+        .highlight { font-family: 'Space Grotesk', sans-serif; font-weight: 600; }
+        .text-sm { font-size: 0.82rem; }
+        .text-muted { color: var(--slate-400); }
+        .mr-1 { margin-right: 0.25rem; }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <a class="topbar-logo" href="/">ShelfRx <span class="topbar-pill">BETA</span></a>
+    <div class="topbar-nav">
+        <a href="/app/planograms" class="topbar-nav-link">Mes planogrammes</a>
+        <a href="/app/analytics" class="topbar-nav-link active">Analytiques</a>
+        <a href="/app/stock" class="topbar-nav-link">📦 Connexion Stock</a>
+    </div>
+    <a href="/app/alerts" id="notifBell" style="display:none; position:relative; font-size:1.1rem; text-decoration:none; padding:0.3rem; border-radius:6px; color:var(--teal);" title="Alertes stock">🔔<span id="notifBadge" style="display:none; position:absolute; top:-2px; right:-2px; background:#EF4444; color:white; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span></a>
+    <div id="userPill" style="display:none;" class="user-pill" onclick="toggleDd()">
+        <span>&#128100;</span>
+        <span id="userPillName" class="user-pill-name"></span>
+        <span>&#9662;</span>
+        <div class="user-dd" id="userDd">
+            <div id="userDdEmail" style="padding:0.4rem 0.75rem; font-size:0.75rem; color:var(--slate-400); border-bottom:1px solid var(--slate-100); margin-bottom:0.25rem;"></div>
+            <div class="user-dd-item" onclick="window.location.href='/app/alerts'">🔔 Alertes stock</div>
+            <div class="user-dd-item" onclick="window.location.href='/app/planograms'">&#128203; Mes planogrammes</div>
+            <div class="user-dd-item" onclick="window.location.href='/app/analytics'">&#128200; Analytiques</div>
+            <div class="user-dd-item" onclick="window.location.href='/app/stock'">📦 Connexion Stock</div>
+            <div class="user-dd-item" onclick="window.location.href='/billing'">&#128179; Abonnement</div>
+            <div class="user-dd-item" onclick="doLogout()">&#128275; Se déconnecter</div>
+        </div>
+    </div>
+</div>
+
+<div class="content" id="mainContent">
+    <div class="loading-state"><div class="spinner"></div><p>Chargement...</p></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  SEEDED RANDOM — ensures consistent mock data per project
+// ══════════════════════════════════════════════════════════
+function hashStr(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+    return Math.abs(h);
+}
+function mkRand(seed) {
+    let s = seed >>> 0;
+    return function() {
+        s = (Math.imul(1664525, s) + 1013904223) >>> 0;
+        return s / 4294967296;
+    };
+}
+
+// ══════════════════════════════════════════════════════════
+//  MOCK DATA GENERATION
+// ══════════════════════════════════════════════════════════
+const PHARMACY_PRODUCTS = [
+    'Doliprane 1g', 'Advil 400mg', 'Efferalgan 500mg', 'Nurofen 400mg',
+    'Smecta 3g', 'Imodium 2mg', 'Gaviscon Menthe', 'Maalox 40mg',
+    'Fervex Adulte', 'Actifed Rhume', 'Rhinathiol 5%', 'Humex Rhume',
+    'Biafine Émulsion', 'Bétadine Scrub', 'Mercurochrome Spray', 'Cetaphil Gel',
+    'Magné B6 48cp', 'Supradyn Énergie', 'Isostar Citron', 'Berocca Orange',
+    'Lacteol Fort', 'Ultralevure 200mg', 'Florastor 250mg', 'Ergyprotect',
+    'Vitamin C 1000mg', 'Zinc 15mg', 'Magnésium Marin', 'Vitamine D3 1000',
+    'Arnica Montana', 'Calendula Gel', 'Homéogène 9', 'Oscillococcinum',
+    'Paracétamol 500mg', 'Ibuprofène 200mg', 'Aspirine 500mg', 'Codéine 20mg',
+];
+
+function generateProductName(rand, idx) {
+    return PHARMACY_PRODUCTS[Math.floor(rand() * PHARMACY_PRODUCTS.length)] || `Produit ${idx + 1}`;
+}
+
+function generateMockProject(project, periodDays) {
+    const rand = mkRand(hashStr(project.id + 'v1'));
+    const baseRevenue = 80 + rand() * 420; // 80–500€/day avg
+    const baseUnits = Math.round(baseRevenue / (3 + rand() * 7)); // avg price 3–10€
+
+    // 90 days of daily sales
+    const dailySales = [];
+    let trend = 1 + (rand() - 0.5) * 0.3; // slight up/down trend
+    for (let i = 89; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000);
+        const dayOfWeek = d.getDay();
+        const weekendBoost = (dayOfWeek === 0 || dayOfWeek === 6) ? 1.2 : 1;
+        const noise = 0.6 + rand() * 0.8;
+        const rev = Math.round(baseRevenue * trend * weekendBoost * noise * 100) / 100;
+        const units = Math.round(baseUnits * weekendBoost * noise);
+        trend *= (1 + (rand() - 0.49) * 0.02);
+        dailySales.push({
+            date: d.toISOString().slice(0, 10),
+            revenue: Math.max(rev, 5),
+            units: Math.max(units, 1),
+        });
+    }
+
+    // Shelves
+    const numShelves = project.num_shelves || 3;
+    const shelfProducts = project.products || generateFakeProducts(rand, numShelves);
+    const shelves = [];
+
+    for (let s = 0; s < numShelves; s++) {
+        const shelfRand = mkRand(hashStr(project.id + 'shelf' + s));
+        // Eye-level shelves (1, 2) outperform top/bottom
+        const positionBoost = s === 1 ? 1.4 : s === 2 ? 1.25 : s === 0 ? 0.85 : 0.7;
+        const prods = shelfProducts.filter(p => p.shelf === s) || generateShelfProducts(shelfRand, s, project);
+        const usedWidth = prods.reduce((sum, p) => sum + (p.width || 8), 0);
+        const totalWidth = project.shelf_width || 120;
+
+        shelves.push({
+            num: s + 1,
+            positionBoost,
+            products: prods,
+            usedWidth: Math.min(usedWidth, totalWidth),
+            totalWidth,
+            spaceUsedPct: Math.min(Math.round((usedWidth / totalWidth) * 100), 100),
+        });
+    }
+
+    const periodSales = dailySales.slice(-periodDays);
+    const totalRevenue = periodSales.reduce((s, d) => s + d.revenue, 0);
+    const totalUnits = periodSales.reduce((s, d) => s + d.units, 0);
+    const prevPeriod = dailySales.slice(-periodDays * 2, -periodDays);
+    const prevRevenue = prevPeriod.reduce((s, d) => s + d.revenue, 0);
+    const growthPct = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue * 100) : 0;
+    const avgRotation = 3 + rand() * 7; // rotations / month
+
+    return {
+        ...project,
+        dailySales,
+        shelves,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalUnits,
+        growthPct: Math.round(growthPct * 10) / 10,
+        avgRotation: Math.round(avgRotation * 10) / 10,
+    };
+}
+
+function generateFakeProducts(rand, numShelves) {
+    const products = [];
+    for (let s = 0; s < numShelves; s++) {
+        const n = 4 + Math.round(rand() * 8);
+        for (let i = 0; i < n; i++) {
+            products.push({
+                id: `fake-${s}-${i}`,
+                name: generateProductName(rand, i),
+                width: 4 + Math.round(rand() * 10),
+                height: 8 + Math.round(rand() * 12),
+                shelf: s,
+                priority: ['low', 'medium', 'high'][Math.floor(rand() * 3)],
+            });
+        }
+    }
+    return products;
+}
+
+function generateShelfProducts(rand, shelfNum, project) {
+    const n = 4 + Math.round(rand() * 8);
+    const prods = [];
+    for (let i = 0; i < n; i++) {
+        prods.push({
+            id: `sp-${shelfNum}-${i}`,
+            name: generateProductName(rand, i),
+            width: 4 + Math.round(rand() * 10),
+            height: 8 + Math.round(rand() * 12),
+            shelf: shelfNum,
+            priority: ['low', 'medium', 'high'][Math.floor(rand() * 3)],
+        });
+    }
+    return prods;
+}
+
+function enrichProducts(products, projectId, periodDays) {
+    return products.map((p, idx) => {
+        const pRand = mkRand(hashStr(projectId + (p.id || idx) + 'product'));
+        const salesPerDay = 1 + pRand() * 15;
+        const price = 2 + pRand() * 25;
+        const margin = 0.15 + pRand() * 0.45;
+        const facingWidth = p.width || 8;
+        const facingCount = Math.max(1, Math.round(facingWidth / 6));
+        const salesRatio = salesPerDay / facingWidth; // sales per cm²
+
+        return {
+            ...p,
+            salesPerDay: Math.round(salesPerDay * 10) / 10,
+            revenuePerDay: Math.round(salesPerDay * price * 100) / 100,
+            revenueTotal: Math.round(salesPerDay * price * periodDays * 100) / 100,
+            unitsTotal: Math.round(salesPerDay * periodDays),
+            price: Math.round(price * 100) / 100,
+            marginPct: Math.round(margin * 100),
+            facingCount,
+            spaceOccupation: Math.round((facingWidth / 120) * 100),
+            salesRatio: Math.round(salesRatio * 100) / 100,
+            stockLeft: Math.round(5 + pRand() * 40),
+        };
+    });
+}
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let allProjects = [];
+let enrichedProjects = [];
+let currentView = 'armoires'; // armoires | etageres | produits
+let selectedProject = null;
+let selectedShelf = null;
+let periodDays = 30;
+let currentUser = null;
+let salesChart = null;
+let topChart = null;
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+function getToken() { return localStorage.getItem('shelfrx_token'); }
+function getDeviceId() {
+    let id = localStorage.getItem('shelfrx_device_id');
+    if (!id) { id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('shelfrx_device_id', id); }
+    return id;
+}
+
+async function initAuth() {
+    const token = getToken();
+    if (token) {
+        try {
+            const r = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (r.ok) {
+                currentUser = await r.json();
+                document.getElementById('userPill').style.display = 'flex';
+                document.getElementById('userPillName').textContent = currentUser.name || currentUser.email;
+                document.getElementById('userDdEmail').textContent = currentUser.email;
+                loadNotifBadge(token);
+            }
+        } catch(e) {}
+    }
+}
+
+async function loadNotifBadge(token) {
+    try {
+        const r = await fetch('/api/alerts/count', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!r.ok) return;
+        const data = await r.json();
+        const bell = document.getElementById('notifBell');
+        const badge = document.getElementById('notifBadge');
+        if (bell) bell.style.display = 'inline-flex';
+        if (badge && data.unread > 0) {
+            badge.textContent = data.unread > 99 ? '99+' : data.unread;
+            badge.style.display = 'inline-flex';
+        }
+    } catch(_) {}
+}
+
+function toggleDd() {
+    const dd = document.getElementById('userDd');
+    dd.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+    if (!e.target.closest('.user-pill')) { const dd = document.getElementById('userDd'); if (dd) dd.classList.remove('open'); }
+});
+function doLogout() {
+    const t = getToken();
+    if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + t } });
+    localStorage.removeItem('shelfrx_token');
+    window.location.href = '/login?redirect=/app/analytics';
+}
+
+// ══════════════════════════════════════════════════════════
+//  DATA LOADING
+// ══════════════════════════════════════════════════════════
+async function loadData() {
+    const deviceId = getDeviceId();
+    try {
+        const r = await fetch(`/api/projects?device_id=${encodeURIComponent(deviceId)}`);
+        if (!r.ok) throw new Error('Erreur réseau');
+        const projects = await r.json();
+        allProjects = Array.isArray(projects) ? projects : [];
+
+        // Load products for each project (parallel, best-effort)
+        await Promise.all(allProjects.map(async (p) => {
+            try {
+                const pr = await fetch(`/api/projects/${p.id}`);
+                if (pr.ok) {
+                    const data = await pr.json();
+                    p.products = data.products || [];
+                    p.num_shelves = data.num_shelves || p.num_shelves || 3;
+                    p.shelf_width = data.shelf_width || 120;
+                }
+            } catch(e) { p.products = []; }
+        }));
+
+        computeEnrichedData();
+        renderPage();
+    } catch(e) {
+        document.getElementById('mainContent').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3 class="empty-title">Impossible de charger les données</h3><p class="empty-sub">${e.message}</p></div>`;
+    }
+}
+
+function computeEnrichedData() {
+    enrichedProjects = allProjects.map(p => generateMockProject(p, periodDays));
+}
+
+// ══════════════════════════════════════════════════════════
+//  FORMATTING
+// ══════════════════════════════════════════════════════════
+function fmt€(v) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v); }
+function fmtN(v) { return new Intl.NumberFormat('fr-FR').format(Math.round(v)); }
+function perfClass(pct, thresh = [60, 80]) {
+    if (pct >= thresh[1]) return 'perf-high';
+    if (pct >= thresh[0]) return 'perf-medium';
+    return 'perf-low';
+}
+function growthHtml(pct) {
+    const cls = pct >= 0 ? 'kpi-delta-up' : 'kpi-delta-down';
+    const arrow = pct >= 0 ? '↑' : '↓';
+    return `<span class="${cls}">${arrow} ${Math.abs(pct)}%</span> vs période préc.`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════════
+function renderPage() {
+    if (currentView === 'armoires') renderArmoiresView();
+    else if (currentView === 'etageres') renderEtageresView();
+    else if (currentView === 'produits') renderProduitsView();
+}
+
+// ─────────────────────── VUE ARMOIRES ───────────────────────
+function renderArmoiresView() {
+    const totalRevenue = enrichedProjects.reduce((s, p) => s + p.totalRevenue, 0);
+    const totalUnits = enrichedProjects.reduce((s, p) => s + p.totalUnits, 0);
+    const avgRotation = enrichedProjects.length ? enrichedProjects.reduce((s, p) => s + p.avgRotation, 0) / enrichedProjects.length : 0;
+    const bestProject = enrichedProjects.length ? enrichedProjects.reduce((best, p) => p.totalRevenue > best.totalRevenue ? p : best, enrichedProjects[0]) : null;
+    const sorted = [...enrichedProjects].sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    const periodLabel = periodDays === 7 ? '7 derniers jours' : periodDays === 30 ? '30 derniers jours' : '90 derniers jours';
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="demo-banner">⚠️ <strong>Données de démonstration</strong> — Les vraies données de ventes seront connectées lors de la Phase 3. Cette visualisation montre des données mockées pour valider l'UX.</div>
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Analytiques</h1>
+                <p class="page-sub">Performance de vos rayons sur les ${periodLabel}</p>
+            </div>
+            <div class="period-tabs">
+                <button class="period-tab ${periodDays===7?'active':''}" onclick="setPeriod(7)">7j</button>
+                <button class="period-tab ${periodDays===30?'active':''}" onclick="setPeriod(30)">30j</button>
+                <button class="period-tab ${periodDays===90?'active':''}" onclick="setPeriod(90)">90j</button>
+            </div>
+        </div>
+
+        <div class="breadcrumb">
+            <span>&#128200; Vue globale</span>
+        </div>
+
+        ${enrichedProjects.length === 0 ? `
+        <div class="empty-state">
+            <div class="empty-icon">&#128203;</div>
+            <h3 class="empty-title">Aucun planogramme créé</h3>
+            <p class="empty-sub">Créez votre premier planogramme pour visualiser les performances de vente.</p>
+            <a href="/app" class="btn btn-primary" style="margin-top:1.5rem;">+ Créer un planogramme</a>
+        </div>` : `
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Ventes totales</div>
+                <div class="kpi-value teal">${fmt€(totalRevenue)}</div>
+                <div class="kpi-sub">${fmtN(totalUnits)} unités vendues</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Armoires analysées</div>
+                <div class="kpi-value">${enrichedProjects.length}</div>
+                <div class="kpi-sub">Planogrammes sauvegardés</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Rotation moyenne</div>
+                <div class="kpi-value amber">${avgRotation.toFixed(1)}×</div>
+                <div class="kpi-sub">Rotations / mois</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Meilleure armoire</div>
+                <div class="kpi-value green" style="font-size:1.1rem; padding-top:0.3rem;">${bestProject ? bestProject.name : '—'}</div>
+                <div class="kpi-sub">${bestProject ? fmt€(bestProject.totalRevenue) + ' sur la période' : ''}</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-card-header">
+                <div>
+                    <div class="section-card-title">Performance par armoire</div>
+                    <div class="section-card-sub">Cliquez sur une armoire pour voir le détail par étagère</div>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Armoire / Planogramme</th>
+                            <th>Ventes (€)</th>
+                            <th>Unités</th>
+                            <th>Étagères</th>
+                            <th>Produits</th>
+                            <th>Rotation</th>
+                            <th>Évolution</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sorted.map((p, idx) => {
+                            const rankBadge = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
+                            const growthCls = p.growthPct >= 0 ? 'kpi-delta-up' : 'kpi-delta-down';
+                            const growthArrow = p.growthPct >= 0 ? '↑' : '↓';
+                            const numProds = p.products ? p.products.length : (p.shelves ? p.shelves.reduce((s,sh) => s + sh.products.length, 0) : '—');
+                            return `
+                            <tr class="clickable" onclick="drillToEtageres('${p.id}')">
+                                <td><span style="font-weight:600;">${rankBadge} ${p.name}</span>${p.category ? `<br><span class="text-sm text-muted">${p.category}</span>` : ''}</td>
+                                <td><span class="highlight">${fmt€(p.totalRevenue)}</span></td>
+                                <td>${fmtN(p.totalUnits)}</td>
+                                <td>${p.num_shelves || '—'}</td>
+                                <td>${numProds}</td>
+                                <td><span class="perf-badge ${p.avgRotation > 6 ? 'perf-high' : p.avgRotation > 3 ? 'perf-medium' : 'perf-low'}">${p.avgRotation}×/mois</span></td>
+                                <td><span class="${growthCls}">${growthArrow} ${Math.abs(p.growthPct)}%</span></td>
+                                <td class="drill-arrow">→</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card" style="grid-column: 1 / -1;">
+                <div class="chart-title">📈 Ventes totales sur la période</div>
+                <div class="chart-wrap" style="height:220px;"><canvas id="salesChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">🏆 Top 10 armoires par ventes</div>
+                <div class="chart-wrap" style="height:250px;"><canvas id="topChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">📊 Répartition des ventes par armoire</div>
+                <div class="chart-wrap" style="height:250px;"><canvas id="pieChart"></canvas></div>
+            </div>
+        </div>
+        `}
+    `;
+
+    if (enrichedProjects.length > 0) {
+        renderSalesChart();
+        renderTopChart(sorted);
+        renderPieChart(sorted);
+    }
+}
+
+// ─────────────────────── VUE ÉTAGÈRES ───────────────────────
+function renderEtageresView() {
+    const proj = enrichedProjects.find(p => p.id === selectedProject);
+    if (!proj) { currentView = 'armoires'; renderPage(); return; }
+
+    const periodLabel = periodDays === 7 ? '7j' : periodDays === 30 ? '30j' : '90j';
+    const periodSales = proj.dailySales.slice(-periodDays);
+    const projRevenue = proj.totalRevenue;
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="demo-banner">⚠️ <strong>Données de démonstration</strong> — Données mockées pour la validation UX.</div>
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">${proj.name}</h1>
+                <p class="page-sub">Performance par étagère · ${periodLabel}</p>
+            </div>
+            <div class="period-tabs">
+                <button class="period-tab ${periodDays===7?'active':''}" onclick="setPeriod(7)">7j</button>
+                <button class="period-tab ${periodDays===30?'active':''}" onclick="setPeriod(30)">30j</button>
+                <button class="period-tab ${periodDays===90?'active':''}" onclick="setPeriod(90)">90j</button>
+            </div>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-link" onclick="goToArmoires()">Vue globale</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>${proj.name}</span>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Ventes armoire</div>
+                <div class="kpi-value teal">${fmt€(projRevenue)}</div>
+                <div class="kpi-sub">${growthHtml(proj.growthPct)}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Étagères</div>
+                <div class="kpi-value">${proj.shelves.length}</div>
+                <div class="kpi-sub">${proj.products ? proj.products.length : '—'} produits au total</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Rotation moy.</div>
+                <div class="kpi-value amber">${proj.avgRotation}×</div>
+                <div class="kpi-sub">Rotations / mois</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Meilleure étagère</div>
+                <div class="kpi-value green" style="font-size:1.4rem; padding-top:0.2rem;">Étagère ${proj.shelves.reduce((best,s) => s.positionBoost > best.positionBoost ? s : best, proj.shelves[0]).num}</div>
+                <div class="kpi-sub">Position la plus performante</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-card-header">
+                <div>
+                    <div class="section-card-title">Performance par étagère</div>
+                    <div class="section-card-sub">Cliquez sur une étagère pour voir les produits</div>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Étagère</th>
+                            <th>Ventes (€)</th>
+                            <th>Unités</th>
+                            <th>Produits</th>
+                            <th>Espace utilisé</th>
+                            <th>Performance</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${proj.shelves.map(shelf => {
+                            const shelfRevenue = Math.round(proj.totalRevenue * shelf.positionBoost / proj.shelves.reduce((s,sh) => s + sh.positionBoost, 0) * 100) / 100;
+                            const shelfUnits = Math.round(proj.totalUnits * shelf.positionBoost / proj.shelves.reduce((s,sh) => s + sh.positionBoost, 0));
+                            const perfPct = Math.round(shelf.positionBoost * 65);
+                            const isUnder = shelf.spaceUsedPct < 50 || shelf.positionBoost < 0.9;
+                            return `
+                            <tr class="clickable" onclick="drillToProduits('${proj.id}', ${shelf.num})">
+                                <td><span style="font-weight:600;">Étagère ${shelf.num}</span>${isUnder ? '<br><span style="font-size:0.72rem; color:var(--red);">⚠️ Sous-performante</span>' : ''}</td>
+                                <td><span class="highlight">${fmt€(shelfRevenue)}</span></td>
+                                <td>${fmtN(shelfUnits)}</td>
+                                <td>${shelf.products.length}</td>
+                                <td>
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar"><div class="progress-fill ${shelf.spaceUsedPct < 60 ? 'amber' : ''}" style="width:${shelf.spaceUsedPct}%"></div></div>
+                                        <span class="progress-pct">${shelf.spaceUsedPct}%</span>
+                                    </div>
+                                </td>
+                                <td><span class="perf-badge ${perfPct >= 75 ? 'perf-high' : perfPct >= 50 ? 'perf-medium' : 'perf-low'}">${perfPct >= 75 ? 'Excellente' : perfPct >= 50 ? 'Bonne' : 'Faible'}</span></td>
+                                <td class="drill-arrow">→</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card" style="grid-column: 1 / -1;">
+                <div class="chart-title">📈 Ventes de l'armoire sur la période</div>
+                <div class="chart-wrap" style="height:200px;"><canvas id="salesChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">🗺️ Heatmap — Performance par position</div>
+                <div id="heatmapWrap"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">📊 Répartition des ventes par étagère</div>
+                <div class="chart-wrap" style="height:250px;"><canvas id="pieChart"></canvas></div>
+            </div>
+        </div>
+    `;
+
+    renderSalesChartSingle(proj, periodDays);
+    renderHeatmap(proj);
+    renderShelfPieChart(proj);
+}
+
+// ─────────────────────── VUE PRODUITS ───────────────────────
+function renderProduitsView() {
+    const proj = enrichedProjects.find(p => p.id === selectedProject);
+    if (!proj) { currentView = 'armoires'; renderPage(); return; }
+    const shelf = proj.shelves.find(s => s.num === selectedShelf);
+    if (!shelf) { currentView = 'etageres'; renderPage(); return; }
+
+    const enriched = enrichProducts(shelf.products, proj.id + 'shelf' + shelf.num, periodDays);
+    const sorted = [...enriched].sort((a, b) => b.revenueTotal - a.revenueTotal);
+    const totalRev = sorted.reduce((s, p) => s + p.revenueTotal, 0);
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="demo-banner">⚠️ <strong>Données de démonstration</strong> — Données mockées pour la validation UX.</div>
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Étagère ${shelf.num} — ${proj.name}</h1>
+                <p class="page-sub">${sorted.length} produits · ${fmt€(totalRev)} sur la période</p>
+            </div>
+            <div class="period-tabs">
+                <button class="period-tab ${periodDays===7?'active':''}" onclick="setPeriod(7)">7j</button>
+                <button class="period-tab ${periodDays===30?'active':''}" onclick="setPeriod(30)">30j</button>
+                <button class="period-tab ${periodDays===90?'active':''}" onclick="setPeriod(90)">90j</button>
+            </div>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-link" onclick="goToArmoires()">Vue globale</span>
+            <span class="breadcrumb-sep">›</span>
+            <span class="breadcrumb-link" onclick="goToEtageres()"> ${proj.name}</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>Étagère ${shelf.num}</span>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Ventes étagère</div>
+                <div class="kpi-value teal">${fmt€(totalRev)}</div>
+                <div class="kpi-sub">${fmtN(sorted.reduce((s,p) => s + p.unitsTotal, 0))} unités</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Produits</div>
+                <div class="kpi-value">${sorted.length}</div>
+                <div class="kpi-sub">sur ${shelf.totalWidth}cm de largeur</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Espace utilisé</div>
+                <div class="kpi-value ${shelf.spaceUsedPct >= 80 ? 'green' : shelf.spaceUsedPct >= 50 ? 'amber' : 'red'}" style="font-size:1.6rem;">${shelf.spaceUsedPct}%</div>
+                <div class="kpi-sub">${shelf.usedWidth}cm / ${shelf.totalWidth}cm</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Meilleur produit</div>
+                <div class="kpi-value green" style="font-size:0.95rem; padding-top:0.4rem;">${sorted[0] ? sorted[0].name : '—'}</div>
+                <div class="kpi-sub">${sorted[0] ? fmt€(sorted[0].revenueTotal) + ' sur la période' : ''}</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-card-header">
+                <div>
+                    <div class="section-card-title">Produits — analyse ventes / espace</div>
+                    <div class="section-card-sub">Ratio ventes/espace : identifie les produits à développer ou réduire</div>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Ventes (€)</th>
+                            <th>Unités/j</th>
+                            <th>Facings</th>
+                            <th>Espace</th>
+                            <th>Marge</th>
+                            <th>Stock restant</th>
+                            <th>Recommandation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sorted.map((p, idx) => {
+                            const shareOfRevPct = totalRev > 0 ? Math.round(p.revenueTotal / totalRev * 100) : 0;
+                            const rec = p.salesRatio > 2 ? { cls: 'perf-high', txt: '↑ Augmenter facings' } :
+                                        p.salesRatio > 0.8 ? { cls: 'perf-ok', txt: '✓ Maintenir' } :
+                                        { cls: 'perf-low', txt: '↓ Réduire facings' };
+                            return `
+                            <tr>
+                                <td>
+                                    <span style="font-weight:600;">${p.name}</span>
+                                    ${idx === 0 ? '<span class="mr-1">🏆</span>' : ''}
+                                    <br><span class="text-sm text-muted">${p.price.toFixed(2)}€/unité</span>
+                                </td>
+                                <td>
+                                    <span class="highlight">${fmt€(p.revenueTotal)}</span>
+                                    <br><span class="text-sm text-muted">${shareOfRevPct}% de l'étagère</span>
+                                </td>
+                                <td>${p.salesPerDay.toFixed(1)}</td>
+                                <td>${p.facingCount}</td>
+                                <td>
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(p.spaceOccupation * 3, 100)}%"></div></div>
+                                        <span class="progress-pct">${p.spaceOccupation}%</span>
+                                    </div>
+                                </td>
+                                <td><span class="perf-badge ${p.marginPct >= 35 ? 'perf-high' : p.marginPct >= 20 ? 'perf-medium' : 'perf-low'}">${p.marginPct}%</span></td>
+                                <td style="color:${p.stockLeft < 10 ? 'var(--red)' : 'var(--slate-700)'}; font-weight:${p.stockLeft < 10 ? '600' : '400'}">${p.stockLeft} u.</td>
+                                <td><span class="perf-badge ${rec.cls}">${rec.txt}</span></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="chart-card" style="margin-bottom:1.5rem;">
+            <div class="chart-title">🏆 Top produits par ventes</div>
+            <div class="chart-wrap" style="height:260px;"><canvas id="topProdChart"></canvas></div>
+        </div>
+    `;
+
+    renderTopProductsChart(sorted.slice(0, 10));
+}
+
+// ══════════════════════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════════════════════
+function renderSalesChart() {
+    const canvas = document.getElementById('salesChart');
+    if (!canvas) return;
+    if (salesChart) { salesChart.destroy(); salesChart = null; }
+
+    // Aggregate all projects' daily sales for the period
+    const dailyMap = {};
+    enrichedProjects.forEach(p => {
+        p.dailySales.slice(-periodDays).forEach(d => {
+            if (!dailyMap[d.date]) dailyMap[d.date] = 0;
+            dailyMap[d.date] += d.revenue;
+        });
+    });
+    const labels = Object.keys(dailyMap).sort();
+    const values = labels.map(l => Math.round(dailyMap[l] * 100) / 100);
+
+    salesChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels.map(l => { const d = new Date(l); return `${d.getDate()}/${d.getMonth()+1}`; }),
+            datasets: [{
+                label: 'Ventes (€)',
+                data: values,
+                borderColor: '#0D9488',
+                backgroundColor: 'rgba(13,148,136,0.08)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: labels.length > 30 ? 0 : 3,
+                pointHoverRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt€(ctx.raw)}` } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 0, maxTicksLimit: 10 } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: v => fmt€(v) } }
+            }
+        }
+    });
+}
+
+function renderSalesChartSingle(proj, days) {
+    const canvas = document.getElementById('salesChart');
+    if (!canvas) return;
+    const data = proj.dailySales.slice(-days);
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: data.map(d => { const dt = new Date(d.date); return `${dt.getDate()}/${dt.getMonth()+1}`; }),
+            datasets: [{
+                label: 'Ventes (€)',
+                data: data.map(d => d.revenue),
+                borderColor: '#0D9488', backgroundColor: 'rgba(13,148,136,0.08)',
+                borderWidth: 2, fill: true, tension: 0.4,
+                pointRadius: days > 30 ? 0 : 3, pointHoverRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt€(ctx.raw)}` } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 0, maxTicksLimit: 10 } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: v => fmt€(v) } }
+            }
+        }
+    });
+}
+
+function renderTopChart(sorted) {
+    const canvas = document.getElementById('topChart');
+    if (!canvas) return;
+    const top = sorted.slice(0, 10);
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: top.map(p => p.name.length > 20 ? p.name.slice(0, 18) + '…' : p.name),
+            datasets: [{
+                label: 'Ventes (€)',
+                data: top.map(p => p.totalRevenue),
+                backgroundColor: top.map((_, i) => i === 0 ? '#0D9488' : i === 1 ? '#14b8a6' : '#5eead4'),
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt€(ctx.raw)}` } } },
+            scales: {
+                x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, callback: v => fmt€(v) } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+}
+
+function renderPieChart(sorted) {
+    const canvas = document.getElementById('pieChart');
+    if (!canvas) return;
+    const top = sorted.slice(0, 8);
+    const colors = ['#0D9488','#14b8a6','#5eead4','#99f6e4','#f59e0b','#6366f1','#ec4899','#94a3b8'];
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: top.map(p => p.name.length > 16 ? p.name.slice(0, 14) + '…' : p.name),
+            datasets: [{ data: top.map(p => p.totalRevenue), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } }, tooltip: { callbacks: { label: ctx => ` ${fmt€(ctx.raw)}` } } }
+        }
+    });
+}
+
+function renderShelfPieChart(proj) {
+    const canvas = document.getElementById('pieChart');
+    if (!canvas) return;
+    const colors = ['#0D9488','#14b8a6','#5eead4','#99f6e4','#f59e0b','#6366f1'];
+    const totalBoost = proj.shelves.reduce((s, sh) => s + sh.positionBoost, 0);
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: proj.shelves.map(s => `Étagère ${s.num}`),
+            datasets: [{
+                data: proj.shelves.map(s => Math.round(proj.totalRevenue * s.positionBoost / totalBoost)),
+                backgroundColor: colors, borderWidth: 2, borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { font: { size: 12 }, boxWidth: 14 } }, tooltip: { callbacks: { label: ctx => ` ${fmt€(ctx.raw)}` } } }
+        }
+    });
+}
+
+function renderTopProductsChart(sorted) {
+    const canvas = document.getElementById('topProdChart');
+    if (!canvas) return;
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: sorted.map(p => p.name.length > 22 ? p.name.slice(0, 20) + '…' : p.name),
+            datasets: [{
+                label: 'Ventes (€)',
+                data: sorted.map(p => p.revenueTotal),
+                backgroundColor: sorted.map((_, i) => i === 0 ? '#0D9488' : i < 3 ? '#14b8a6' : '#5eead4'),
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt€(ctx.raw)}` } } },
+            scales: {
+                x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, callback: v => fmt€(v) } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+}
+
+function renderHeatmap(proj) {
+    const wrap = document.getElementById('heatmapWrap');
+    if (!wrap) return;
+    const maxBoost = Math.max(...proj.shelves.map(s => s.positionBoost));
+
+    const html = proj.shelves.map(shelf => {
+        const cells = shelf.products.map((p, pi) => {
+            const pRand = mkRand(hashStr(proj.id + (p.id || pi) + 'heat'));
+            const intensity = shelf.positionBoost * (0.5 + pRand() * 0.5) / maxBoost;
+            const r = Math.round(13 + (220 - 13) * (1 - intensity));
+            const g = Math.round(148 + (230 - 148) * (1 - intensity));
+            const b = Math.round(136 + (240 - 136) * (1 - intensity));
+            const textColor = intensity > 0.5 ? 'rgba(255,255,255,0.9)' : 'rgba(15,23,42,0.5)';
+            const shortName = (p.name || '').split(' ')[0].slice(0, 3);
+            return `<div class="heatmap-cell" style="background:rgb(${r},${g},${b});color:${textColor};" title="${p.name}">${shortName}</div>`;
+        }).join('');
+        return `<div class="heatmap-shelf"><div class="heatmap-label">Ét. ${shelf.num}</div><div class="heatmap-cells">${cells}</div></div>`;
+    }).join('');
+
+    wrap.innerHTML = `
+        <div class="heatmap-wrap" style="padding:1rem 0;">
+            ${html}
+            <div class="heatmap-legend">
+                <span>Faible</span>
+                <div class="heatmap-legend-gradient"></div>
+                <span>Élevé</span>
+                <span style="margin-left:1rem; color:var(--slate-300);">|</span>
+                <span>Les couleurs indiquent le volume de ventes estimé par produit</span>
+            </div>
+        </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+function drillToEtageres(projectId) {
+    selectedProject = projectId;
+    currentView = 'etageres';
+    renderPage();
+    window.scrollTo(0, 0);
+}
+function drillToProduits(projectId, shelfNum) {
+    selectedProject = projectId;
+    selectedShelf = shelfNum;
+    currentView = 'produits';
+    renderPage();
+    window.scrollTo(0, 0);
+}
+function goToArmoires() { currentView = 'armoires'; selectedProject = null; selectedShelf = null; renderPage(); window.scrollTo(0, 0); }
+function goToEtageres() { currentView = 'etageres'; selectedShelf = null; renderPage(); window.scrollTo(0, 0); }
+
+function setPeriod(days) {
+    periodDays = days;
+    computeEnrichedData();
+    renderPage();
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+async function init() {
+    await initAuth();
+    await loadData();
+}
+init();
+</script>
+</body>
+</html>

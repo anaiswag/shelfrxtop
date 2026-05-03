@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfRx - Planogrammes pour pharmacies en 5 minutes</title>
+    <meta name="description" content="Créez des planogrammes professionnels pour votre pharmacie en 5 minutes. Photo, import CSV, export PDF/PNG, liens partageables. Essai gratuit 7 jours — puis 79 €/mois. 100% en français.">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-500: #64748B;
+            --slate-200: #E2E8F0;
+            --white: #FFFFFF;
+            --cream: #F8FAFC;
+            --mint: #F0FDFA;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--slate-700);
+            background: var(--white);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--slate-900);
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 1.2rem 2rem;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--slate-900);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo-pill {
+            background: var(--teal);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .nav-cta {
+            background: var(--teal);
+            color: white;
+            text-decoration: none;
+            padding: 0.55rem 1.4rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.15s;
+        }
+        .nav-cta:hover { background: var(--teal-dark); }
+
+        /* HERO */
+        .hero {
+            padding: 10rem 2rem 5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--amber-light);
+            color: #92400E;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.35rem 0.8rem;
+            border-radius: 20px;
+            margin-bottom: 1.25rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .hero-text h1 {
+            font-size: 3rem;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.25rem;
+        }
+        .hero-text h1 span { color: var(--teal); }
+        .hero-text .tagline {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--slate-900);
+            margin-bottom: 0.75rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .hero-text p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--slate-500);
+            max-width: 460px;
+            margin-bottom: 2rem;
+        }
+        .hero-cta-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--teal);
+            color: white;
+            text-decoration: none;
+            padding: 0.9rem 2rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .btn-primary:hover { background: var(--teal-dark); transform: translateY(-1px); }
+        .hero-note {
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        /* HERO VISUAL */
+        .hero-visual { position: relative; }
+        .shelf-graphic {
+            background: var(--cream);
+            border: 1px solid var(--slate-200);
+            border-radius: 16px;
+            padding: 1.75rem;
+            position: relative;
+            box-shadow: 0 8px 40px rgba(13,148,136,0.08);
+        }
+        .shelf-label {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: var(--teal);
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+        }
+        .shelf-row {
+            display: flex;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+            padding: 0.6rem;
+            background: var(--white);
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .shelf-item {
+            border-radius: 6px;
+            height: 56px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            text-align: center;
+            line-height: 1.2;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .shelf-item.high { background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); flex: 3; }
+        .shelf-item.med { background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%); flex: 2; }
+        .shelf-item.low { background: linear-gradient(135deg, #94A3B8 0%, #CBD5E1 100%); color: var(--slate-500); flex: 1; }
+        .shelf-item-name { font-size: 0.62rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 4px; }
+        .shelf-item-dim { font-size: 0.5rem; opacity: 0.7; font-weight: 500; letter-spacing: 0.02em; }
+        .stock-badge { font-size: 0.52rem; opacity: 0.8; display: block; }
+        .shelf-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--slate-200);
+        }
+        .shelf-meta-item {
+            text-align: center;
+        }
+        .shelf-meta-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--teal);
+        }
+        .shelf-meta-label {
+            font-size: 0.7rem;
+            color: var(--slate-500);
+            margin-top: 0.1rem;
+        }
+
+        /* SOCIAL PROOF STRIP */
+        .social-strip {
+            background: var(--slate-900);
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .social-strip-inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .social-strip p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+        }
+        .proof-badges {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .proof-badge {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.85);
+            padding: 0.5rem 1.25rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* FEATURES SECTION */
+        .features {
+            padding: 6rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .section-label {
+            display: inline-block;
+            background: var(--teal-light);
+            color: var(--teal-dark);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.9rem;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+        }
+        .section-title {
+            font-size: 2.1rem;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+        .section-sub {
+            font-size: 1.05rem;
+            color: var(--slate-500);
+            max-width: 560px;
+            line-height: 1.7;
+            margin-bottom: 3.5rem;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        .feature-card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 14px;
+            padding: 1.75rem;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .feature-card:hover {
+            box-shadow: 0 8px 32px rgba(13,148,136,0.1);
+            transform: translateY(-2px);
+        }
+        .feature-icon {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        .feature-card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--slate-900);
+        }
+        .feature-card p {
+            font-size: 0.88rem;
+            color: var(--slate-500);
+            line-height: 1.6;
+        }
+        .feature-tag {
+            display: inline-block;
+            margin-top: 0.75rem;
+            background: var(--mint);
+            color: var(--teal-dark);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        /* HOW IT WORKS */
+        .how {
+            background: var(--slate-900);
+            padding: 6rem 2rem;
+        }
+        .how-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .how .section-label {
+            background: rgba(13,148,136,0.2);
+            color: var(--teal-light);
+        }
+        .how .section-title { color: white; }
+        .how .section-sub { color: rgba(255,255,255,0.6); }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            position: relative;
+        }
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 2rem;
+            left: calc(12.5% + 1rem);
+            right: calc(12.5% + 1rem);
+            height: 2px;
+            background: linear-gradient(to right, rgba(13,148,136,0.4), rgba(13,148,136,0.4));
+            z-index: 0;
+        }
+        .step {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 1.75rem 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .step-num {
+            width: 40px;
+            height: 40px;
+            background: var(--teal);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .step h3 {
+            color: white;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+        .step p {
+            color: rgba(255,255,255,0.55);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .step-emoji {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* DIFFERENTIATION */
+        .diff {
+            background: var(--white);
+            padding: 6rem 2rem;
+            border-top: 1px solid var(--slate-200);
+        }
+        .diff-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .diff .section-label { margin-bottom: 1rem; }
+        .diff .section-title { margin-bottom: 3rem; }
+        .diff-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .diff-card {
+            border-radius: 16px;
+            padding: 2rem;
+            border: 2px solid;
+        }
+        .diff-card.manual {
+            border-color: var(--slate-200);
+            background: var(--cream);
+        }
+        .diff-card.shelfrx {
+            border-color: var(--teal);
+            background: var(--mint);
+        }
+        .diff-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .diff-card.manual h3 { color: var(--slate-700); }
+        .diff-card.shelfrx h3 { color: var(--teal-dark); }
+        .diff-subtitle {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 1.25rem;
+        }
+        .diff-card.manual .diff-subtitle {
+            background: var(--slate-200);
+            color: var(--slate-500);
+        }
+        .diff-card.shelfrx .diff-subtitle {
+            background: var(--teal-light);
+            color: var(--teal-dark);
+        }
+        .diff-steps {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+        .diff-steps li {
+            font-size: 0.92rem;
+            color: var(--slate-500);
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .diff-steps li:last-child { border-bottom: none; }
+        .diff-time {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .diff-card.manual .diff-time { color: var(--slate-700); }
+        .diff-card.shelfrx .diff-time { color: var(--teal); }
+        .diff-verdict {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .diff-card.manual .diff-verdict {
+            background: rgba(0,0,0,0.05);
+            color: var(--slate-500);
+        }
+        .diff-card.shelfrx .diff-verdict {
+            background: var(--teal-light);
+            color: var(--teal-dark);
+        }
+
+        /* PROBLEM */
+        .problem {
+            background: var(--cream);
+            padding: 6rem 2rem;
+        }
+        .problem-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .problem .section-title { text-align: center; margin-bottom: 3rem; }
+        .problem-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+        .stat {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 14px;
+            padding: 2rem;
+            text-align: center;
+        }
+        .stat-number {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--teal);
+            display: block;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--slate-500);
+            margin-top: 0.4rem;
+            line-height: 1.5;
+        }
+
+        /* CLOSING */
+        .closing {
+            padding: 7rem 2rem;
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .closing h2 {
+            font-size: 2.4rem;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        .closing h2 span { color: var(--teal); }
+        .closing p {
+            font-size: 1.1rem;
+            color: var(--slate-500);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+        .closing-note {
+            font-size: 0.85rem;
+            color: var(--slate-500);
+            margin-top: 1rem;
+        }
+
+        /* PRICING */
+        .pricing {
+            padding: 6rem 2rem;
+            background: var(--mint);
+        }
+        .pricing-inner {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .pricing-card {
+            background: var(--white);
+            border: 2px solid var(--teal);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 12px 40px rgba(13,148,136,0.12);
+            margin-top: 2.5rem;
+        }
+        .pricing-badge {
+            display: inline-block;
+            background: var(--teal-light);
+            color: var(--teal-dark);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+        }
+        .pricing-price {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--slate-900);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .pricing-price .pricing-period {
+            font-size: 1.4rem;
+            color: var(--slate-500);
+            font-weight: 500;
+        }
+        .pricing-trial {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--teal-dark);
+            margin-bottom: 2rem;
+            padding: 0.5rem 1.25rem;
+            background: var(--teal-light);
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .pricing-features {
+            list-style: none;
+            text-align: left;
+            margin: 0 auto 2rem;
+            max-width: 360px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem 1rem;
+        }
+        .pricing-features li {
+            font-size: 0.9rem;
+            color: var(--slate-700);
+            font-weight: 500;
+        }
+        .pricing-features li::before {
+            content: '✓ ';
+            color: var(--teal);
+            font-weight: 700;
+        }
+        .pricing-cta {
+            width: 100%;
+            justify-content: center;
+            font-size: 1.05rem;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        .pricing-note {
+            font-size: 0.82rem;
+            color: var(--slate-500);
+        }
+        .pricing-anchor {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--slate-500);
+            flex-wrap: wrap;
+        }
+        .pricing-anchor strong {
+            color: var(--teal-dark);
+            font-weight: 700;
+        }
+        .pricing-vs {
+            background: var(--slate-200);
+            color: var(--slate-500);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--slate-900);
+            color: var(--slate-400);
+            padding: 3.5rem 2rem 2rem;
+        }
+        .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        .footer-brand .footer-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .footer-brand p {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-width: 220px;
+        }
+        .footer-links {
+            display: flex;
+            gap: 3rem;
+        }
+        .footer-col h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--slate-400);
+            margin-bottom: 1rem;
+        }
+        .footer-col a {
+            display: block;
+            color: var(--slate-400);
+            text-decoration: none;
+            font-size: 0.88rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.15s;
+        }
+        .footer-col a:hover { color: white; }
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 2.5rem auto 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--slate-500);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        /* TABLET */
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .steps { grid-template-columns: repeat(2, 1fr); }
+            .steps::before { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 7rem 1.5rem 3rem;
+                gap: 2.5rem;
+            }
+            .hero-text h1 { font-size: 2.2rem; }
+            .hero-text p { max-width: 100%; }
+            .problem-stats { grid-template-columns: 1fr; gap: 1rem; }
+            .features { padding: 4rem 1.5rem; }
+            .how { padding: 4rem 1.5rem; }
+            .diff { padding: 4rem 1.5rem; }
+            .diff-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .closing { padding: 4rem 1.5rem; }
+            .section-title { font-size: 1.7rem; }
+            .pricing { padding: 4rem 1.5rem; }
+            .pricing-card { padding: 2rem 1.5rem; }
+            .pricing-features { grid-template-columns: 1fr; }
+        }
+
+        /* MOBILE */
+        @media (max-width: 480px) {
+            nav { padding: 0.8rem 1rem; }
+            .logo { font-size: 1rem; }
+            .nav-cta { padding: 0.45rem 1rem; font-size: 0.8rem; }
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 5.5rem 1rem 2.5rem;
+                gap: 2rem;
+            }
+            .hero-text h1 { font-size: 1.75rem; line-height: 1.2; }
+            .hero-text .tagline { font-size: 1rem; }
+            .hero-text p { font-size: 0.9rem; }
+            .btn-primary { padding: 0.8rem 1.5rem; font-size: 0.95rem; }
+            .features { padding: 3rem 1rem; }
+            .features-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .feature-card { padding: 1.25rem; }
+            .how { padding: 3rem 1rem; }
+            .steps { grid-template-columns: 1fr; gap: 1rem; }
+            .diff { padding: 3rem 1rem; }
+            .diff-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+            .diff-card { padding: 1.5rem; }
+            .diff-time { font-size: 1.6rem; }
+            .problem { padding: 3rem 1rem; }
+            .problem-stats { grid-template-columns: 1fr; gap: 0.75rem; }
+            .stat { padding: 1.5rem; }
+            .stat-number { font-size: 2.2rem; }
+            .closing { padding: 3rem 1rem; }
+            .closing h2 { font-size: 1.6rem; }
+            .closing p { font-size: 0.95rem; }
+            .pricing { padding: 3rem 1rem; }
+            .pricing-card { padding: 1.75rem 1.25rem; }
+            .pricing-price { font-size: 3rem; }
+            .pricing-features { grid-template-columns: 1fr; gap: 0.4rem; }
+            .pricing-anchor { flex-direction: column; gap: 0.5rem; text-align: center; }
+            .proof-badges { gap: 0.6rem; }
+            .proof-badge { font-size: 0.78rem; padding: 0.4rem 0.9rem; }
+            .shelf-graphic { padding: 1.25rem; }
+            .shelf-item { height: 38px; font-size: 0.58rem; }
+            a[href="/register"] { min-height: 44px; }
+            .section-title { font-size: 1.4rem; }
+            .footer-inner { flex-direction: column; }
+            .footer-links { flex-direction: column; gap: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a class="logo" href="#">ShelfRx <span class="logo-pill">BETA</span></a>
+            <div style="display:flex; align-items:center; gap:1.2rem;">
+                <a href="/pricing" style="font-size:0.9rem; color:var(--slate-700); text-decoration:none; font-weight:500;">Tarifs</a>
+                <a href="/login" style="font-size:0.9rem; color:var(--slate-700); text-decoration:none; font-weight:500;">Se connecter</a>
+                <a href="/register" class="nav-cta">Essai gratuit 7 jours →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-text">
+            <div class="hero-badge">🤖 Nouveau — Détection IA des produits par photo</div>
+            <h1>De la photo au planogramme en <span>2 minutes</span> — l'IA détecte vos produits automatiquement</h1>
+            <p class="tagline">Fonctionne avec gpt-4o vision. Prenez une photo, l'IA fait le reste.</p>
+            <p>Photographiez votre rayon. L'IA détecte les dimensions ET identifie chaque produit automatiquement. Confirmez, ajustez, c'est prêt — sans saisie manuelle.</p>
+            <div class="hero-cta-group">
+                <a href="/app" class="btn-primary">Essayer la détection IA →</a>
+                <span class="hero-note">Essai 7 jours gratuit · puis 79 €/mois · Sans CB requise</span>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="shelf-graphic">
+                <div class="shelf-label">Disposition optimisée</div>
+                <div class="shelf-row">
+                    <div class="shelf-item high" style="flex:3">
+                        <span class="shelf-item-name">Doliprane 500mg</span>
+                        <span class="shelf-item-dim">3L × 6P × 1H</span>
+                        <span class="stock-badge">142 unités</span>
+                    </div>
+                    <div class="shelf-item med" style="flex:2">
+                        <span class="shelf-item-name">Voltarène Gel</span>
+                        <span class="shelf-item-dim">2L × 4P × 1H</span>
+                        <span class="stock-badge">38 unités</span>
+                    </div>
+                    <div class="shelf-item low">
+                        <span class="shelf-item-name">Nurofen</span>
+                        <span class="shelf-item-dim">1L × 2P</span>
+                        <span class="stock-badge">4</span>
+                    </div>
+                </div>
+                <div class="shelf-row">
+                    <div class="shelf-item med" style="flex:2">
+                        <span class="shelf-item-name">Gaviscon</span>
+                        <span class="shelf-item-dim">2L × 5P × 1H</span>
+                        <span class="stock-badge">56 unités</span>
+                    </div>
+                    <div class="shelf-item high" style="flex:3">
+                        <span class="shelf-item-name">Spasfon Lyoc</span>
+                        <span class="shelf-item-dim">3L × 5P × 1H</span>
+                        <span class="stock-badge">89 unités</span>
+                    </div>
+                    <div class="shelf-item low">
+                        <span class="shelf-item-name">Smecta</span>
+                        <span class="shelf-item-dim">1L × 3P</span>
+                        <span class="stock-badge">7</span>
+                    </div>
+                </div>
+                <div class="shelf-row">
+                    <div class="shelf-item high" style="flex:3">
+                        <span class="shelf-item-name">Advil 400mg</span>
+                        <span class="shelf-item-dim">3L × 8P × 1H</span>
+                        <span class="stock-badge">203 unités</span>
+                    </div>
+                    <div class="shelf-item low">
+                        <span class="shelf-item-name">Aspro</span>
+                        <span class="shelf-item-dim">1L × 1P</span>
+                        <span class="stock-badge">2</span>
+                    </div>
+                    <div class="shelf-item med" style="flex:2">
+                        <span class="shelf-item-name">Dafalgan 1g</span>
+                        <span class="shelf-item-dim">2L × 4P × 1H</span>
+                        <span class="stock-badge">44 unités</span>
+                    </div>
+                </div>
+                <div class="shelf-meta">
+                    <div class="shelf-meta-item">
+                        <div class="shelf-meta-value">3</div>
+                        <div class="shelf-meta-label">Rangées</div>
+                    </div>
+                    <div class="shelf-meta-item">
+                        <div class="shelf-meta-value">9</div>
+                        <div class="shelf-meta-label">Produits</div>
+                    </div>
+                    <div class="shelf-meta-item">
+                        <div class="shelf-meta-value">PDF</div>
+                        <div class="shelf-meta-label">Export prêt</div>
+                    </div>
+                    <div class="shelf-meta-item">
+                        <div class="shelf-meta-value">🔗</div>
+                        <div class="shelf-meta-label">Partager</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOCIAL PROOF STRIP -->
+    <div class="social-strip">
+        <div class="social-strip-inner">
+            <p>Conçu pour les pharmacies indépendantes françaises</p>
+            <div class="proof-badges">
+                <span class="proof-badge">🏥 21 000+ pharmacies indépendantes en France</span>
+                <span class="proof-badge">📊 Planogrammes professionnels</span>
+                <span class="proof-badge">🇫🇷 Interface entièrement en français</span>
+                <span class="proof-badge">⚡ Prêt en 2 minutes</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="features">
+        <div class="section-label">Fonctionnalités</div>
+        <h2 class="section-title">Tout ce dont vous avez besoin,<br>rien de superflu</h2>
+        <p class="section-sub">Chaque fonctionnalité a été pensée pour un pharmacien indépendant qui gère tout, tout seul.</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon">📸</span>
+                <h3>Création par photo</h3>
+                <p>Photographiez votre rayon existant. L'IA détecte automatiquement les dimensions (largeur, hauteur, profondeur, nombre de rangees).</p>
+                <span class="feature-tag">🇫🇷 Détection IA des dimensions</span>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🔍</span>
+                <h3>Détection IA des produits</h3>
+                <p>L'IA identifie les produits sur votre photo et pré-remplit le planogramme. Confirmez, ajustez, c'est prêt.</p>
+                <span class="feature-tag" style="background: var(--amber-light); color: #92400E;">✨ Nouveau</span>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">💾</span>
+                <h3>Sauvegarde & reprise</h3>
+                <p>Vos projets sont sauvegardés. Reprenez un planogramme là où vous l'avez laissé, modifiez-le à tout moment.</p>
+                <span class="feature-tag">Projets persistants</span>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🔗</span>
+                <h3>Liens partageables</h3>
+                <p>Générez un lien unique pour chaque planogramme. Partagez-le avec votre équipe, votre préparateur, ou votre délégué commercial.</p>
+                <span class="feature-tag">Partage instantané</span>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">📄</span>
+                <h3>Export PDF & PNG</h3>
+                <p>Téléchargez votre planogramme en PDF haute qualité pour l'imprimer ou en PNG pour l'envoyer par messagerie.</p>
+                <span class="feature-tag">Prêt à imprimer</span>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🇫🇷</span>
+                <h3>100% en français</h3>
+                <p>Interface, instructions, exports — tout est en français. Aucun terme anglais technique à déchiffrer.</p>
+                <span class="feature-tag">Interface native FR</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how">
+        <div class="how-inner">
+            <div class="section-label">Comment ça marche</div>
+            <h2 class="section-title">De la photo au planogramme en 4 étapes</h2>
+            <p class="section-sub" style="margin-bottom: 3rem;">Pas de formation, pas de manuel. Prenez une photo — l'IA fait le reste.</p>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <span class="step-emoji">📸</span>
+                    <h3>Photographiez le rayon</h3>
+                    <p>Prenez une photo de votre rayon existant. Formats acceptés : JPG, PNG — depuis votre téléphone ou votre bureau.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <span class="step-emoji">🤖</span>
+                    <h3>Détection IA</h3>
+                    <p>L'IA (gpt-4o vision) analyse votre photo : dimensions du rayon, nombre de produits détectés. Résultat en quelques secondes.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <span class="step-emoji">✅</span>
+                    <h3>Confirmez & ajustez</h3>
+                    <p>Les produits sont pré-remplis automatiquement. Modifiez, ajoutez ou supprimez. Pas de saisie manuelle obligatoire.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <span class="step-emoji">🚀</span>
+                    <h3>Exportez & partagez</h3>
+                    <p>Téléchargez en PDF ou PNG. Partagez le lien avec votre équipe. Le rayon peut être réorganisé dès aujourd'hui.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DIFFERENTIATION -->
+    <section class="diff">
+        <div class="diff-inner">
+            <div class="section-label">Comparatif</div>
+            <h2 class="section-title">Pourquoi ShelfRx change tout</h2>
+            <div class="diff-grid">
+                <div class="diff-card manual">
+                    <h3>Autres outils</h3>
+                    <span class="diff-subtitle">Méthode manuelle classique</span>
+                    <ul class="diff-steps">
+                        <li>📐 Saisie manuelle des dimensions du rayon</li>
+                        <li>📦 Création produit par produit en base</li>
+                        <li>📝 Recherche et ajout de chaque référence</li>
+                        <li>📊 Calcul manuel des facings</li>
+                        <li>✏️ Ajustements un par un</li>
+                    </ul>
+                    <span class="diff-time">30+ min</span>
+                    <span class="diff-verdict">Saisie fastidieuse, erreurs fréquentes</span>
+                </div>
+                <div class="diff-card shelfrx">
+                    <h3>ShelfRx</h3>
+                    <span class="diff-subtitle">🤖 Détection IA par photo</span>
+                    <ul class="diff-steps">
+                        <li>📸 Photographiez le rayon (1 min)</li>
+                        <li>🤖 L'IA détecte les dimensions (gpt-4o vision)</li>
+                        <li>🔍 L'IA identifie les produits automatiquement</li>
+                        <li>✅ Validez et ajustez si nécessaire</li>
+                        <li>📄 Export PDF / lien partageable</li>
+                    </ul>
+                    <span class="diff-time">2 min</span>
+                    <span class="diff-verdict">Rapide, précis, sans effort</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROBLEM / STATS -->
+    <section class="problem">
+        <div class="problem-inner">
+            <h2 class="section-title">Le marché que les gros outils ont ignoré</h2>
+            <div class="problem-stats">
+                <div class="stat">
+                    <span class="stat-number">21 000+</span>
+                    <div class="stat-label">Pharmacies indépendantes en France sans outil de facing abordable</div>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">+15 à 25%</span>
+                    <div class="stat-label">De hausse des ventes OTC avec des planogrammes optimisés</div>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">2 min</span>
+                    <div class="stat-label">Pour créer un planogramme complet avec ShelfRx — l'IA fait le travail</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="pricing">
+        <div class="pricing-inner">
+            <div class="section-label">Tarifs</div>
+            <h2 class="section-title">Outil professionnel. Prix accessible.</h2>
+            <p class="section-sub" style="margin: 0 auto 0;">Les solutions enterprise facturent 150 à 1 000 €/mois pour des outils conçus pour les grandes enseignes. ShelfRx est conçu pour vous.</p>
+            <div class="pricing-card">
+                <div class="pricing-badge">Le seul plan dont vous avez besoin</div>
+                <div class="pricing-price">79 €<span class="pricing-period">/mois</span></div>
+                <div class="pricing-trial">✨ Essai gratuit 7 jours — sans carte bancaire</div>
+                <ul class="pricing-features">
+                    <li>Planogrammes illimités</li>
+                    <li>Détection IA des produits</li>
+                    <li>Liens partageables</li>
+                    <li>Export PDF &amp; PNG</li>
+                    <li>Interface 100% française</li>
+                    <li>Sauvegarde &amp; reprise</li>
+                </ul>
+                <a href="/app" class="btn-primary pricing-cta">Essayer la détection IA →</a>
+                <p class="pricing-note">Annulable à tout moment · Aucune carte bancaire requise pour l'essai</p>
+            </div>
+            <div class="pricing-anchor">
+                <span>🏢 Solutions enterprise : 150–1 000 €/mois</span>
+                <span class="pricing-vs">vs</span>
+                <strong>ShelfRx : 79 €/mois — 2× moins cher</strong>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLOSING CTA -->
+    <section class="closing">
+        <h2>Votre rayon mérite mieux<br>qu'une <span>habitude de 10 ans.</span></h2>
+        <p>ShelfRx est l'outil que les fournisseurs de logiciels de pharmacie n'ont jamais construit : simple, rapide, en français, conçu pour les indépendants. Un planogramme professionnel en 2 minutes — grâce à l'IA.</p>
+        <a href="/app" class="btn-primary" style="font-size: 1.1rem; padding: 1rem 2.5rem;">Essayer la détection IA →</a>
+        <p class="closing-note">Essai 7 jours gratuit · puis 79 €/mois · Sans carte bancaire requise</p>
+    </section>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="footer-logo">ShelfRx <span class="logo-pill">BETA</span></div>
+                <p>Outil de planogramme pour pharmacies indépendantes. Créez en 2 minutes.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="/">Fonctionnalités</a>
+                    <a href="/pricing">Tarifs</a>
+                    <a href="/app">Démarrer</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="#">Centre d'aide</a>
+                    <a href="#">Contact</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Légal</h4>
+                    <a href="#">CGV</a>
+                    <a href="#">Politique de confidentialité</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 ShelfRx. Tous droits réservés.</span>
+            <span>🇫🇷 100% made in France</span>
+        </div>
+    </footer>
+
+    <!-- Polsia Analytics -->
+    <script>
+    (function() {
+        var slug = 'shelfrx';
+        if (!slug) return;
+        var vid = localStorage.getItem('polsia_vid');
+        if (!vid) {
+            vid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+            localStorage.setItem('polsia_vid', vid);
+        }
+        new Image().src = 'https://polsia.com/api/beacon/pixel?s=' + encodeURIComponent(slug) + '&v=' + encodeURIComponent(vid);
+    })();
+    </script>
+</body>
+</html>

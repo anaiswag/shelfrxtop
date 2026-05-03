@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfRx — Choisissez votre formule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488; --teal-dark: #0F766E; --teal-light: #CCFBF1; --teal-50: #F0FDFA;
+            --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B;
+            --slate-400: #94A3B8; --slate-300: #CBD5E1; --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9; --amber: #F59E0B; --amber-light: #FEF3C7;
+        }
+        body { font-family: 'DM Sans', sans-serif; background: var(--slate-100); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 2rem 1rem 3rem; }
+        h1,h2,h3 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+
+        .logo-bar { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2.5rem; }
+        .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.5rem; color: var(--slate-900); text-decoration: none; }
+        .logo-pill { background: var(--teal); color: white; font-size: 0.55rem; padding: 0.15rem 0.4rem; border-radius: 3px; vertical-align: middle; margin-left: 4px; font-weight: 600; }
+
+        .status-section { text-align: center; margin-bottom: 2rem; }
+        .status-badge { display: inline-block; font-size: 0.82rem; padding: 0.35rem 0.9rem; border-radius: 20px; font-weight: 600; margin-bottom: 1rem; }
+        .status-badge.expired  { background: #fee2e2; color: #b91c1c; }
+        .status-badge.trial    { background: var(--amber-light); color: #92400e; }
+        .status-badge.active   { background: #dcfce7; color: #166534; }
+        .page-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .page-sub { color: var(--slate-500); font-size: 0.97rem; line-height: 1.6; }
+
+        .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; width: 100%; max-width: 720px; margin-bottom: 1.5rem; }
+        @media (max-width: 580px) { .plans-grid { grid-template-columns: 1fr; } }
+
+        .plan-card { background: white; border-radius: 16px; border: 2px solid var(--slate-200); padding: 2rem 1.75rem; position: relative; transition: border-color 0.2s, box-shadow 0.2s; }
+        .plan-card.featured { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(13,148,136,0.08); }
+        .featured-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--teal); color: white; font-size: 0.7rem; padding: 0.3rem 0.9rem; border-radius: 20px; font-weight: 700; white-space: nowrap; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.03em; }
+
+        .plan-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .plan-price { font-size: 2.4rem; font-weight: 700; color: var(--teal-dark); font-family: 'Space Grotesk', sans-serif; line-height: 1; margin: 0.75rem 0 0.25rem; }
+        .plan-price span { font-size: 1rem; font-weight: 400; color: var(--teal); }
+        .plan-note { font-size: 0.78rem; color: var(--slate-400); margin-bottom: 1.5rem; }
+
+        .features { list-style: none; margin-bottom: 1.75rem; }
+        .feature { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.45rem 0; font-size: 0.88rem; color: var(--slate-700); line-height: 1.4; }
+        .feature-check { color: var(--teal); font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+        .feature-x { color: var(--slate-300); font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+        .feature.disabled { color: var(--slate-400); }
+
+        .btn-plan { display: block; width: 100%; padding: 0.9rem 1.5rem; border-radius: 10px; font-size: 1rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; text-decoration: none; text-align: center; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-plan-primary { background: var(--teal); color: white; }
+        .btn-plan-primary:hover { background: var(--teal-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,148,136,0.3); }
+        .btn-plan-outline { background: white; color: var(--teal); border: 2px solid var(--teal-light); }
+        .btn-plan-outline:hover { background: var(--teal-50); transform: translateY(-1px); }
+
+        .guarantee { text-align: center; font-size: 0.82rem; color: var(--slate-400); margin-bottom: 2rem; }
+        .back-link { font-size: 0.85rem; color: var(--slate-500); text-decoration: none; }
+        .back-link:hover { color: var(--teal); }
+
+        /* Success state */
+        .success-card { background: white; border-radius: 16px; border: 1px solid var(--slate-200); padding: 2.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); text-align: center; max-width: 480px; width: 100%; display: none; }
+        .success-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .success-title { font-size: 1.6rem; margin-bottom: 0.75rem; }
+        .success-sub { color: var(--slate-500); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; }
+        .btn-go-app { display: inline-block; background: var(--teal); color: white; padding: 12px 28px; border-radius: 10px; font-size: 1rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; text-decoration: none; }
+
+        /* Upgrade state for active users */
+        .upgrade-section { max-width: 720px; width: 100%; }
+        .current-plan-bar { background: white; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--slate-700); }
+        .current-plan-label { display: inline-block; background: var(--teal-50); color: var(--teal-dark); font-weight: 700; font-size: 0.78rem; padding: 0.25rem 0.6rem; border-radius: 6px; margin-left: 0.5rem; }
+
+        .loading { text-align: center; padding: 4rem; color: var(--slate-400); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="logo-bar">
+    <a href="/" class="logo">ShelfRx <span class="logo-pill">BETA</span></a>
+</div>
+
+<div id="loadingState" class="loading">Chargement…</div>
+
+<!-- Success state (after Stripe checkout) -->
+<div id="successCard" class="success-card">
+    <div class="success-icon">🎉</div>
+    <h2 class="success-title" id="successTitle">Abonnement activé !</h2>
+    <p class="success-sub" id="successSub">Votre abonnement est maintenant actif. Accédez à ShelfRx et commencez à créer vos planogrammes.</p>
+    <a href="/app" class="btn-go-app">Accéder à ShelfRx →</a>
+</div>
+
+<!-- Main paywall (trial / expired / cancelled) -->
+<div id="paywallSection" style="width:100%;max-width:720px;display:none;">
+    <div class="status-section">
+        <div class="status-badge expired" id="statusBadge">Essai expiré</div>
+        <h1 class="page-title" id="pageTitle">Choisissez votre formule</h1>
+        <p class="page-sub" id="pageSub">Activez votre abonnement pour créer et modifier des planogrammes.</p>
+    </div>
+
+    <div class="plans-grid">
+
+        <!-- Classique -->
+        <div class="plan-card" id="classiqueCard">
+            <div class="plan-name">Classique</div>
+            <div class="plan-price">79 €<span>/mois</span></div>
+            <div class="plan-note">TVA incluse · Sans engagement</div>
+            <ul class="features">
+                <li class="feature"><span class="feature-check">✓</span>Planogrammes illimités</li>
+                <li class="feature"><span class="feature-check">✓</span>Détection IA de produits sur photo</li>
+                <li class="feature"><span class="feature-check">✓</span>Import CSV / Excel</li>
+                <li class="feature"><span class="feature-check">✓</span>Export PDF & PNG haute résolution</li>
+                <li class="feature"><span class="feature-check">✓</span>Partage par lien sécurisé</li>
+                <li class="feature"><span class="feature-check">✓</span>Support par email</li>
+                <li class="feature disabled"><span class="feature-x">✗</span>Analytics ventes par armoire</li>
+                <li class="feature disabled"><span class="feature-x">✗</span>Recommandations merchandising IA</li>
+            </ul>
+            <a href="https://buy.stripe.com/dRm3cvd2edKwgMM5KWdlA1M" class="btn-plan btn-plan-outline" id="classiqueBtn">
+                Choisir Classique →
+            </a>
+        </div>
+
+        <!-- Premium -->
+        <div class="plan-card featured" id="premiumCard">
+            <div class="featured-badge">⭐ Recommandé</div>
+            <div class="plan-name">Premium</div>
+            <div class="plan-price">99 €<span>/mois</span></div>
+            <div class="plan-note">TVA incluse · Sans engagement</div>
+            <ul class="features">
+                <li class="feature"><span class="feature-check">✓</span>Planogrammes illimités</li>
+                <li class="feature"><span class="feature-check">✓</span>Détection IA de produits sur photo</li>
+                <li class="feature"><span class="feature-check">✓</span>Import CSV / Excel</li>
+                <li class="feature"><span class="feature-check">✓</span>Export PDF & PNG haute résolution</li>
+                <li class="feature"><span class="feature-check">✓</span>Partage par lien sécurisé</li>
+                <li class="feature"><span class="feature-check">✓</span>Support par email</li>
+                <li class="feature"><span class="feature-check" style="color:#0D9488;font-weight:700;">✓</span><strong>Analytics ventes par armoire</strong></li>
+                <li class="feature"><span class="feature-check" style="color:#0D9488;font-weight:700;">✓</span><strong>Recommandations merchandising IA</strong></li>
+            </ul>
+            <a href="https://buy.stripe.com/dRm14n3rEcGs7ccgpAdlA1N" class="btn-plan btn-plan-primary" id="premiumBtn">
+                Choisir Premium →
+            </a>
+        </div>
+
+    </div>
+
+    <p class="guarantee">✅ Sans engagement · Annulez à tout moment · Vos données sont sauvegardées</p>
+    <div style="text-align:center;">
+        <a href="/app/planograms" class="back-link">← Retour à mes planogrammes</a>
+    </div>
+</div>
+
+<!-- Upgrade section (active users wanting to upgrade to Premium) -->
+<div id="upgradeSection" class="upgrade-section" style="display:none;">
+    <div class="status-section">
+        <div class="status-badge active" id="activeBadge">Abonnement actif</div>
+        <h1 class="page-title">Passez au Premium</h1>
+        <p class="page-sub">Débloquez les analytics ventes et les recommandations merchandising IA.</p>
+    </div>
+    <div class="current-plan-bar">
+        <span>Formule actuelle : <span class="current-plan-label" id="currentPlanLabel">Classique</span></span>
+        <a href="/app" style="font-size:0.85rem;color:var(--teal);text-decoration:none;font-weight:600;">← Retour à l'app</a>
+    </div>
+    <div class="plans-grid">
+        <div class="plan-card featured">
+            <div class="featured-badge">⭐ Premium</div>
+            <div class="plan-name">Passez à Premium</div>
+            <div class="plan-price">99 €<span>/mois</span></div>
+            <div class="plan-note">TVA incluse · Sans engagement</div>
+            <ul class="features">
+                <li class="feature"><span class="feature-check">✓</span>Tout Classique inclus</li>
+                <li class="feature"><span class="feature-check" style="color:#0D9488;font-weight:700;">+</span><strong>Analytics ventes par armoire</strong></li>
+                <li class="feature"><span class="feature-check" style="color:#0D9488;font-weight:700;">+</span><strong>Recommandations merchandising IA</strong></li>
+            </ul>
+            <a href="https://buy.stripe.com/dRm14n3rEcGs7ccgpAdlA1N" class="btn-plan btn-plan-primary">
+                Passer à Premium →
+            </a>
+        </div>
+    </div>
+    <p class="guarantee">La différence de montant est calculée au prorata par Stripe · Annulez à tout moment</p>
+</div>
+
+<script>
+(async () => {
+    const token = localStorage.getItem('shelfrx_token');
+    const isSuccess = window.location.pathname.includes('/billing/success') ||
+                      new URLSearchParams(window.location.search).get('session_id');
+    const wantsUpgrade = new URLSearchParams(window.location.search).get('upgrade') === '1';
+
+    // Success flow: poll until subscription is active
+    if (isSuccess) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('successCard').style.display = 'block';
+
+        if (token) {
+            let tries = 0;
+            const poll = setInterval(async () => {
+                tries++;
+                try {
+                    const r = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+                    const data = await r.json();
+                    if (data.subscription_status === 'active') {
+                        localStorage.setItem('shelfrx_user', JSON.stringify(data));
+                        const planName = data.subscription_plan === 'premium' ? 'Premium' : 'Classique';
+                        document.getElementById('successTitle').textContent = `Bienvenue sur ShelfRx ${planName} !`;
+                        document.getElementById('successSub').textContent =
+                            `Votre abonnement ${planName} est actif. Toutes les fonctionnalités sont disponibles.`;
+                    }
+                    if (tries >= 6) clearInterval(poll);
+                } catch { if (tries >= 6) clearInterval(poll); }
+            }, 2500);
+        }
+        return;
+    }
+
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+
+    try {
+        const r = await fetch('/api/billing/status', { headers: { Authorization: `Bearer ${token}` } });
+        if (r.status === 401) { window.location.href = '/login'; return; }
+        const data = await r.json();
+
+        document.getElementById('loadingState').style.display = 'none';
+
+        const status = data.subscription_status;
+        const plan = data.subscription_plan;
+
+        // Active + already premium → redirect to app
+        if (status === 'active' && plan === 'premium') {
+            window.location.href = '/app';
+            return;
+        }
+
+        // Active + classique + wants upgrade
+        if (status === 'active' && (plan === 'classique' || wantsUpgrade)) {
+            const label = plan === 'premium' ? 'Premium' : (plan === 'classique' ? 'Classique' : 'Actif');
+            document.getElementById('currentPlanLabel').textContent = label;
+            document.getElementById('upgradeSection').style.display = 'block';
+            return;
+        }
+
+        // Active (no specific plan or just active) → redirect to app
+        if (status === 'active') {
+            window.location.href = '/app';
+            return;
+        }
+
+        // Trial or expired → show paywall
+        const badge = document.getElementById('statusBadge');
+        if (status === 'trial') {
+            badge.className = 'status-badge trial';
+            badge.textContent = `Essai : ${data.days_left} jour${data.days_left > 1 ? 's' : ''} restant${data.days_left > 1 ? 's' : ''}`;
+            document.getElementById('pageTitle').textContent = 'Choisissez votre formule';
+            document.getElementById('pageSub').textContent =
+                `Votre essai expire dans ${data.days_left} jour${data.days_left > 1 ? 's' : ''}. Choisissez votre formule pour ne pas perdre l'accès.`;
+        } else if (status === 'cancelled') {
+            badge.className = 'status-badge expired';
+            badge.textContent = 'Abonnement résilié';
+            document.getElementById('pageTitle').textContent = 'Réactivez votre accès';
+            document.getElementById('pageSub').textContent = 'Votre abonnement est résilié. Choisissez une formule pour retrouver accès à tous vos planogrammes.';
+        } else {
+            badge.className = 'status-badge expired';
+            badge.textContent = 'Essai expiré';
+        }
+
+        document.getElementById('paywallSection').style.display = 'block';
+
+    } catch (err) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('paywallSection').style.display = 'block';
+    }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ShelfRx — Connexion Stock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488; --teal-dark: #0F766E; --teal-light: #CCFBF1; --teal-50: #F0FDFA;
+            --amber: #F59E0B; --amber-light: #FEF3C7; --amber-dark: #92400E;
+            --red: #EF4444; --red-light: #FEE2E2;
+            --green: #10B981; --green-light: #D1FAE5; --green-dark: #065F46;
+            --blue: #3B82F6; --blue-light: #DBEAFE;
+            --slate-900: #0F172A; --slate-700: #334155; --slate-600: #475569;
+            --slate-500: #64748B; --slate-400: #94A3B8; --slate-300: #CBD5E1;
+            --slate-200: #E2E8F0; --slate-100: #F1F5F9; --white: #FFFFFF;
+        }
+        body { font-family: 'DM Sans', sans-serif; color: var(--slate-700); background: var(--slate-100); min-height: 100vh; }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+
+        /* ── TOPBAR ── */
+        .topbar { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; gap: 0.75rem; }
+        .topbar-logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--slate-900); text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+        .topbar-pill { background: var(--teal); color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; }
+        .topbar-nav { display: flex; align-items: center; gap: 0.2rem; overflow-x: auto; flex-shrink: 1; }
+        .topbar-nav-link { font-size: 0.8rem; color: var(--slate-500); text-decoration: none; padding: 0.4rem 0.6rem; border-radius: 6px; transition: all 0.15s; font-weight: 500; white-space: nowrap; }
+        .topbar-nav-link:hover { background: var(--slate-100); color: var(--slate-700); }
+        .topbar-nav-link.active { background: var(--teal-50); color: var(--teal-dark); }
+        .user-pill { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--slate-500); cursor: pointer; position: relative; flex-shrink: 0; }
+        .user-pill-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--teal-light); color: var(--teal-dark); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; font-family: 'Space Grotesk', sans-serif; }
+        .user-pill-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-dd { position: absolute; top: calc(100% + 0.5rem); right: 0; background: white; border: 1px solid var(--slate-200); border-radius: 10px; padding: 0.5rem; min-width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: none; z-index: 100; }
+        .user-dd.open { display: block; }
+        .user-dd-item { padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; color: var(--slate-700); transition: background 0.1s; }
+        .user-dd-item:hover { background: var(--slate-100); }
+
+        /* ── CONTENT ── */
+        .content { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── PAGE HEADER ── */
+        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .page-sub { color: var(--slate-500); font-size: 0.875rem; line-height: 1.5; }
+        .status-badge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.4rem 0.85rem; border-radius: 20px; font-weight: 600; }
+        .status-badge.connected { background: var(--green-light); color: var(--green-dark); }
+        .status-badge.partial { background: var(--amber-light); color: var(--amber-dark); }
+        .status-badge.not-configured { background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); }
+
+        /* ── MAIN TABS ── */
+        .main-tabs { display: flex; background: var(--slate-200); border-radius: 10px; padding: 3px; gap: 2px; margin-bottom: 1.75rem; width: fit-content; }
+        .main-tab { padding: 0.5rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--slate-500); font-family: 'DM Sans', sans-serif; transition: all 0.15s; white-space: nowrap; }
+        .main-tab.active { background: var(--white); color: var(--slate-900); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+        /* ── CARD ── */
+        .card { background: var(--white); border-radius: 16px; border: 1px solid var(--slate-200); padding: 1.75rem; margin-bottom: 1.25rem; }
+        .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .card-sub { color: var(--slate-500); font-size: 0.85rem; line-height: 1.5; }
+
+        /* ── SOFTWARE SELECTOR ── */
+        .software-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+        .software-card { border: 2px solid var(--slate-200); border-radius: 14px; padding: 1.25rem; cursor: pointer; transition: all 0.2s; text-align: center; background: var(--white); }
+        .software-card:hover { border-color: var(--teal-light); background: var(--teal-50); }
+        .software-card.selected { border-color: var(--teal); background: var(--teal-50); }
+        .software-card-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .software-card-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--slate-900); margin-bottom: 0.25rem; }
+        .software-card-desc { font-size: 0.75rem; color: var(--slate-500); line-height: 1.4; }
+        .software-card-badge { display: inline-block; font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 10px; font-weight: 700; margin-top: 0.5rem; }
+        .badge-pn13 { background: var(--blue-light); color: #1D4ED8; }
+        .badge-csv { background: var(--amber-light); color: var(--amber-dark); }
+
+        /* ── STEP GUIDE ── */
+        .step-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .step-back-btn { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--slate-500); cursor: pointer; padding: 0.4rem 0.75rem; border-radius: 8px; border: 1px solid var(--slate-200); background: white; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .step-back-btn:hover { background: var(--slate-100); }
+        .step-lgo-name { font-size: 1.15rem; font-weight: 700; }
+
+        .stepper { display: flex; align-items: center; gap: 0; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.25rem; }
+        .step-dot { display: flex; align-items: center; flex-shrink: 0; cursor: pointer; }
+        .step-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; background: var(--slate-200); color: var(--slate-500); transition: all 0.2s; flex-shrink: 0; }
+        .step-circle.active { background: var(--teal); color: white; }
+        .step-circle.done { background: var(--teal-light); color: var(--teal-dark); }
+        .step-label { font-size: 0.7rem; color: var(--slate-500); margin-top: 0.25rem; text-align: center; max-width: 80px; line-height: 1.2; }
+        .step-label.active { color: var(--teal-dark); font-weight: 600; }
+        .step-connector { height: 2px; width: 32px; background: var(--slate-200); flex-shrink: 0; }
+        .step-connector.done { background: var(--teal); }
+        .step-dot-wrap { display: flex; flex-direction: column; align-items: center; }
+
+        .step-content { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        .step-content-inner { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; }
+        .step-text { flex: 1; min-width: 240px; }
+        .step-number-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: white; font-size: 0.75rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; margin-bottom: 0.75rem; }
+        .step-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .step-desc { color: var(--slate-600); font-size: 0.9rem; line-height: 1.65; }
+        .step-desc p { margin-bottom: 0.6rem; }
+        .step-desc p:last-child { margin-bottom: 0; }
+        .menu-path { display: inline-flex; align-items: center; gap: 0.25rem; background: var(--slate-100); border: 1px solid var(--slate-200); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.82rem; font-weight: 600; color: var(--slate-700); flex-wrap: wrap; margin: 0.5rem 0; font-family: 'Space Grotesk', sans-serif; }
+        .menu-path span { color: var(--slate-400); }
+        .menu-step { background: white; border: 1px solid var(--slate-300); border-radius: 5px; padding: 0.15rem 0.5rem; color: var(--slate-800); white-space: nowrap; }
+        .info-box { background: var(--blue-light); border: 1px solid #BFDBFE; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.83rem; color: #1E40AF; margin-top: 0.75rem; line-height: 1.5; }
+        .info-box strong { font-weight: 600; }
+        .warn-box { background: var(--amber-light); border: 1px solid #FCD34D; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.83rem; color: var(--amber-dark); margin-top: 0.75rem; line-height: 1.5; }
+
+        /* Step illustration (mock-UI diagram) */
+        .step-illustration { flex-shrink: 0; }
+
+        .step-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.75rem; flex-wrap: wrap; gap: 0.75rem; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.25rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; }
+        .btn-primary { background: var(--teal); color: white; }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-secondary { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-300); }
+        .btn-secondary:hover { background: var(--slate-200); }
+        .btn-ghost { background: transparent; color: var(--teal); }
+        .btn-ghost:hover { background: var(--teal-50); }
+        .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; }
+        .btn-lg { padding: 0.85rem 1.75rem; font-size: 0.95rem; }
+
+        /* ── CHECKLIST ── */
+        .checklist { margin-top: 0.5rem; }
+        .checklist-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 0; border-bottom: 1px solid var(--slate-100); cursor: pointer; transition: background 0.1s; border-radius: 8px; padding-left: 0.5rem; }
+        .checklist-item:hover { background: var(--slate-50); }
+        .checklist-item:last-child { border-bottom: none; }
+        .check-box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--slate-300); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; }
+        .check-box.checked { background: var(--teal); border-color: var(--teal); }
+        .check-label { flex: 1; }
+        .check-title { font-size: 0.9rem; font-weight: 600; color: var(--slate-900); margin-bottom: 0.2rem; }
+        .check-sub { font-size: 0.8rem; color: var(--slate-500); line-height: 1.4; }
+        .check-link { color: var(--teal); text-decoration: underline; }
+
+        .ready-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--green-light); color: var(--green-dark); font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 20px; margin-top: 1rem; }
+        .not-ready-note { font-size: 0.8rem; color: var(--slate-400); margin-top: 0.75rem; }
+
+        /* ── UPLOAD ZONE ── */
+        .upload-zone { border: 2px dashed var(--slate-300); border-radius: 14px; padding: 2.5rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--teal); background: var(--teal-50); }
+        .upload-zone.has-file { border-color: var(--teal); border-style: solid; background: var(--teal-50); }
+        .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        .upload-title { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
+        .upload-sub { font-size: 0.82rem; color: var(--slate-500); margin-bottom: 1rem; }
+        .upload-file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .format-pills { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+        .format-pill { font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 10px; background: var(--slate-200); color: var(--slate-600); font-weight: 600; }
+
+        /* ── TEMPLATE DOWNLOAD ── */
+        .templates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+        .template-card { border: 1px solid var(--slate-200); border-radius: 10px; padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; transition: all 0.15s; text-decoration: none; background: white; }
+        .template-card:hover { border-color: var(--teal-light); background: var(--teal-50); }
+        .template-icon { font-size: 1.4rem; flex-shrink: 0; }
+        .template-name { font-size: 0.82rem; font-weight: 600; color: var(--slate-900); margin-bottom: 0.1rem; }
+        .template-type { font-size: 0.7rem; color: var(--slate-400); }
+
+        /* ── PREVIEW TABLE ── */
+        .preview-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--slate-200); margin-top: 1rem; }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .preview-table th { background: var(--slate-100); font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--slate-500); padding: 0.6rem 0.85rem; text-align: left; border-bottom: 1px solid var(--slate-200); }
+        .preview-table td { padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--slate-100); color: var(--slate-700); }
+        .preview-table tr:last-child td { border-bottom: none; }
+        .preview-table tr.error-row td { background: var(--red-light); color: var(--red); }
+        .cell-error { font-size: 0.7rem; color: var(--red); }
+
+        /* ── IMPORT RESULT ── */
+        .import-result { border-radius: 12px; padding: 1.1rem 1.25rem; margin-top: 1rem; display: flex; align-items: flex-start; gap: 0.75rem; }
+        .import-result.success { background: var(--green-light); color: var(--green-dark); }
+        .import-result.partial { background: var(--amber-light); color: var(--amber-dark); }
+        .import-result.error { background: var(--red-light); color: var(--red); }
+        .import-result-icon { font-size: 1.4rem; flex-shrink: 0; }
+        .import-result-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.2rem; }
+        .import-result-sub { font-size: 0.82rem; opacity: 0.85; }
+
+        /* ── IMPORT HISTORY ── */
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .history-table th { font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--slate-400); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--slate-200); }
+        .history-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--slate-100); color: var(--slate-700); }
+        .history-table tr:last-child td { border-bottom: none; }
+        .status-pill { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 10px; font-weight: 700; }
+        .status-pill.success { background: var(--green-light); color: var(--green-dark); }
+        .status-pill.partial { background: var(--amber-light); color: var(--amber-dark); }
+        .status-pill.error { background: var(--red-light); color: var(--red); }
+        .empty-history { text-align: center; padding: 2rem; color: var(--slate-400); font-size: 0.85rem; }
+
+        /* ── COLUMN MAPPING ── */
+        .col-map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+        .col-map-item { display: flex; align-items: center; gap: 0.5rem; }
+        .col-map-label { font-size: 0.8rem; font-weight: 600; color: var(--slate-700); min-width: 120px; }
+        .col-map-select { flex: 1; padding: 0.45rem 0.65rem; border: 1px solid var(--slate-300); border-radius: 7px; font-size: 0.8rem; font-family: 'DM Sans', sans-serif; color: var(--slate-900); background: white; }
+        .col-map-select:focus { outline: none; border-color: var(--teal); }
+
+        /* ── AGENT PN13 ── */
+        .agent-hero { display: flex; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap; }
+        .agent-icon { font-size: 3rem; flex-shrink: 0; }
+        .agent-status-row { display: flex; align-items: center; gap: 0.75rem; margin: 0.75rem 0; flex-wrap: wrap; }
+        .agent-status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--slate-300); flex-shrink: 0; }
+        .agent-status-dot.connected { background: var(--green); animation: pulse 2s infinite; }
+        .agent-status-dot.pending { background: var(--amber); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .agent-status-text { font-size: 0.85rem; font-weight: 600; color: var(--slate-700); }
+
+        .key-box { display: flex; align-items: center; gap: 0.75rem; background: var(--slate-100); border: 1px solid var(--slate-200); border-radius: 10px; padding: 0.75rem 1rem; margin: 1rem 0; flex-wrap: wrap; }
+        .key-value { font-family: 'Courier New', monospace; font-size: 0.85rem; color: var(--slate-900); font-weight: 600; word-break: break-all; flex: 1; letter-spacing: 0.03em; }
+        .key-copy-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.9rem; border-radius: 7px; border: 1px solid var(--slate-300); background: white; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--slate-700); transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+        .key-copy-btn:hover { background: var(--teal-50); border-color: var(--teal-light); color: var(--teal-dark); }
+        .key-copy-btn.copied { background: var(--green-light); border-color: var(--green); color: var(--green-dark); }
+
+        .install-steps { counter-reset: step; list-style: none; margin: 1rem 0; }
+        .install-step { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .install-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: white; font-size: 0.75rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+        .install-step-text { flex: 1; }
+        .install-step-title { font-size: 0.9rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.2rem; }
+        .install-step-desc { font-size: 0.82rem; color: var(--slate-600); line-height: 1.5; }
+
+        .events-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .events-table th { font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--slate-400); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--slate-200); }
+        .events-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--slate-100); color: var(--slate-700); }
+        .events-table tr:last-child td { border-bottom: none; }
+        .event-type-pill { display: inline-flex; align-items: center; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 700; }
+        .event-type-pill.vente { background: var(--blue-light); color: #1D4ED8; }
+        .event-type-pill.reception { background: var(--green-light); color: var(--green-dark); }
+        .event-type-pill.retour { background: var(--amber-light); color: var(--amber-dark); }
+        .event-type-pill.inventaire { background: var(--teal-light); color: var(--teal-dark); }
+        .event-type-pill.ajustement { background: var(--slate-100); color: var(--slate-600); }
+
+        .lgo-compat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; margin-top: 1rem; }
+        .lgo-compat-card { border: 1px solid var(--slate-200); border-radius: 12px; padding: 1rem; background: white; }
+        .lgo-compat-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--slate-900); margin-bottom: 0.2rem; }
+        .lgo-compat-type { font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 10px; font-weight: 700; display: inline-block; margin-bottom: 0.5rem; }
+        .lgo-compat-desc { font-size: 0.78rem; color: var(--slate-500); line-height: 1.4; }
+
+        /* ── LOADING ── */
+        .loading { text-align: center; padding: 4rem; color: var(--slate-400); font-size: 0.9rem; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            .content { padding: 1.25rem 1rem; }
+            .card { padding: 1.25rem; }
+            .software-grid { grid-template-columns: 1fr 1fr; }
+            .step-content-inner { flex-direction: column; }
+            .col-map-grid { grid-template-columns: 1fr; }
+            .topbar { padding: 0.65rem 1rem; }
+        }
+        @media (max-width: 400px) {
+            .software-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+    <a href="/" class="topbar-logo">ShelfRx <span class="topbar-pill">BETA</span></a>
+    <nav class="topbar-nav">
+        <a href="/app" class="topbar-nav-link">📐 Constructeur</a>
+        <a href="/app/planograms" class="topbar-nav-link">📋 Planogrammes</a>
+        <a href="/app/analytics" class="topbar-nav-link">📊 Analytiques</a>
+        <a href="/app/stock" class="topbar-nav-link active">📦 Connexion Stock</a>
+    </nav>
+    <a href="/app/alerts" id="notifBell" style="display:none; position:relative; font-size:1.1rem; text-decoration:none; padding:0.3rem; border-radius:6px; color:var(--teal);" title="Alertes stock">🔔<span id="notifBadge" style="display:none; position:absolute; top:-2px; right:-2px; background:#EF4444; color:white; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span></a>
+    <div class="user-pill" onclick="toggleUserDD()">
+        <div class="user-pill-avatar" id="userAvatar">?</div>
+        <span class="user-pill-name" id="userPillName">Chargement…</span>
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        <div class="user-dd" id="userDD">
+            <div class="user-dd-item" onclick="window.location='/app/alerts'">🔔 Alertes stock</div>
+            <div class="user-dd-item" onclick="window.location='/billing'">💳 Abonnement</div>
+            <div class="user-dd-item" onclick="logout()">🚪 Déconnexion</div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingState" class="loading">Chargement…</div>
+
+<div id="mainContent" style="display:none">
+<div class="content">
+
+    <!-- ── PAGE HEADER ── -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">📦 Connexion Stock</h1>
+            <p class="page-sub">Connectez votre logiciel de gestion pour synchroniser votre stock en temps réel.</p>
+        </div>
+        <div id="configStatusBadge" class="status-badge not-configured">
+            ⚙️ Non configuré
+        </div>
+    </div>
+
+    <!-- ── MAIN TABS ── -->
+    <div class="main-tabs">
+        <button class="main-tab active" id="tabBtnGuide" onclick="switchMainTab('guide')">🎓 Guide interactif</button>
+        <button class="main-tab" id="tabBtnImport" onclick="switchMainTab('import')">📁 Import fichier</button>
+        <button class="main-tab" id="tabBtnAgent" onclick="switchMainTab('agent')">🔌 Agent PN13</button>
+    </div>
+
+    <!-- ══════════ TAB: GUIDE ══════════ -->
+    <div id="tabGuide">
+
+        <!-- Software selector -->
+        <div id="softwareSelector" class="card">
+            <h2 class="card-title">Votre logiciel de gestion</h2>
+            <p class="card-sub">Choisissez votre LGO pour afficher le guide de configuration adapté.</p>
+            <div class="software-grid">
+                <div class="software-card" id="sw-winpharma" onclick="selectSoftware('winpharma')">
+                    <div class="software-card-icon">💊</div>
+                    <div class="software-card-name">Winpharma</div>
+                    <div class="software-card-desc">Connexion PN13 temps réel</div>
+                    <span class="software-card-badge badge-pn13">PN13</span>
+                </div>
+                <div class="software-card" id="sw-lgpi" onclick="selectSoftware('lgpi')">
+                    <div class="software-card-icon">🏥</div>
+                    <div class="software-card-name">LGPI / Pharmagest</div>
+                    <div class="software-card-desc">Connexion PN13 temps réel</div>
+                    <span class="software-card-badge badge-pn13">PN13</span>
+                </div>
+                <div class="software-card" id="sw-leo" onclick="selectSoftware('leo')">
+                    <div class="software-card-icon">🦁</div>
+                    <div class="software-card-name">LEO / Isipharm</div>
+                    <div class="software-card-desc">Export CSV périodique</div>
+                    <span class="software-card-badge badge-csv">CSV</span>
+                </div>
+                <div class="software-card" id="sw-autre" onclick="selectSoftware('autre')">
+                    <div class="software-card-icon">⚙️</div>
+                    <div class="software-card-name">Autre logiciel</div>
+                    <div class="software-card-desc">Import CSV / Excel manuel</div>
+                    <span class="software-card-badge badge-csv">CSV</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step guide (hidden until software selected) -->
+        <div id="stepGuideWrap" style="display:none">
+
+            <!-- Guide header -->
+            <div class="step-header">
+                <button class="step-back-btn" onclick="backToSelector()">← Changer de logiciel</button>
+                <span class="step-lgo-name" id="guideLgoName"></span>
+            </div>
+
+            <!-- Progress stepper -->
+            <div id="guideStepper" class="stepper"></div>
+
+            <!-- Step content card -->
+            <div class="card" id="stepContentCard">
+                <div id="stepContent" class="step-content"></div>
+                <div class="step-nav">
+                    <button class="btn btn-secondary" id="btnPrev" onclick="prevStep()" style="display:none">← Précédent</button>
+                    <div></div>
+                    <button class="btn btn-primary" id="btnNext" onclick="nextStep()">Suivant →</button>
+                </div>
+            </div>
+
+            <!-- Checklist (shown on last step) -->
+            <div id="checklistCard" class="card" style="display:none">
+                <h2 class="card-title" style="margin-bottom:0.25rem">✅ Checklist de validation</h2>
+                <p class="card-sub" style="margin-bottom:1rem">Cochez chaque étape pour confirmer que votre connexion est prête.</p>
+                <div id="checklistItems" class="checklist"></div>
+                <div id="readyBadge" style="display:none" class="ready-badge">✅ Prêt — votre stock est connecté à ShelfRx</div>
+                <p id="notReadyNote" class="not-ready-note">Cochez toutes les cases pour marquer votre connexion comme active.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════ TAB: IMPORT ══════════ -->
+    <div id="tabImport" style="display:none">
+
+        <!-- Template download -->
+        <div class="card">
+            <h2 class="card-title">📄 Télécharger un template CSV</h2>
+            <p class="card-sub" style="margin-bottom:1rem">Utilisez notre template pré-formaté pour préparer votre import. Ouvrez-le dans Excel, remplissez vos données, puis importez ici.</p>
+            <div class="templates-grid">
+                <a class="template-card" onclick="downloadTemplate('winpharma')">
+                    <span class="template-icon">💊</span>
+                    <div><div class="template-name">Winpharma</div><div class="template-type">Template CSV</div></div>
+                </a>
+                <a class="template-card" onclick="downloadTemplate('lgpi')">
+                    <span class="template-icon">🏥</span>
+                    <div><div class="template-name">LGPI</div><div class="template-type">Template CSV</div></div>
+                </a>
+                <a class="template-card" onclick="downloadTemplate('leo')">
+                    <span class="template-icon">🦁</span>
+                    <div><div class="template-name">LEO</div><div class="template-type">Template CSV</div></div>
+                </a>
+                <a class="template-card" onclick="downloadTemplate('autre')">
+                    <span class="template-icon">📋</span>
+                    <div><div class="template-name">Standard</div><div class="template-type">Template CSV</div></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Upload zone -->
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:0.35rem">📁 Importer un fichier stock</h2>
+            <p class="card-sub" style="margin-bottom:1.25rem">Formats acceptés : CSV (UTF-8 ou ISO-8859-1), Excel (.xlsx, .xls). Taille max : 10 Mo.</p>
+
+            <!-- LGO selection for import -->
+            <div style="margin-bottom:1rem; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                <label style="font-size:0.82rem; font-weight:600; color:var(--slate-700);">Logiciel source :</label>
+                <select id="importSoftwareSelect" class="col-map-select" style="max-width:200px" onchange="saveImportSoftware()">
+                    <option value="winpharma">Winpharma</option>
+                    <option value="lgpi">LGPI / Pharmagest</option>
+                    <option value="leo">LEO / Isipharm</option>
+                    <option value="autre">Autre</option>
+                </select>
+            </div>
+
+            <div class="upload-zone" id="uploadZone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+                <input type="file" class="upload-file-input" id="fileInput" accept=".csv,.xlsx,.xls" onchange="onFileSelected(event)">
+                <div id="uploadPrompt">
+                    <div class="upload-icon">📂</div>
+                    <div class="upload-title">Glissez votre fichier ici</div>
+                    <div class="upload-sub">ou cliquez pour choisir un fichier</div>
+                    <div class="format-pills">
+                        <span class="format-pill">CSV</span>
+                        <span class="format-pill">XLSX</span>
+                        <span class="format-pill">XLS</span>
+                    </div>
+                </div>
+                <div id="uploadFileName" style="display:none; font-size:0.9rem; font-weight:600; color:var(--teal-dark);"></div>
+            </div>
+
+            <!-- Column mapping (shown after file load) -->
+            <div id="colMappingWrap" style="display:none; margin-top:1.25rem;">
+                <h3 style="font-size:0.9rem; font-weight:700; margin-bottom:0.25rem;">Correspondance des colonnes</h3>
+                <p style="font-size:0.8rem; color:var(--slate-500); margin-bottom:0.75rem;">Indiquez quelle colonne de votre fichier correspond à chaque champ.</p>
+                <div class="col-map-grid" id="colMappingGrid"></div>
+                <button class="btn btn-primary" style="margin-top:1rem;" onclick="runImport()">📥 Importer les produits</button>
+            </div>
+
+            <!-- Import result -->
+            <div id="importResult" style="display:none"></div>
+
+            <!-- Preview table -->
+            <div id="previewWrap" style="display:none; margin-top:1.25rem;">
+                <h3 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem;">Aperçu des données <span id="previewCount" style="font-weight:400; color:var(--slate-500);"></span></h3>
+                <div class="preview-wrap">
+                    <table class="preview-table" id="previewTable">
+                        <thead id="previewHead"></thead>
+                        <tbody id="previewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Catalogue Import -->
+        <div class="card" id="pdfImportCard">
+            <h2 class="card-title" style="margin-bottom:0.35rem">📄 Importer un PDF catalogue produits</h2>
+            <p class="card-sub" style="margin-bottom:1.25rem">Importez un listing PDF pharmacie (tableau Désignation + Code CIP) directement dans la base produits ShelfRx. Les produits seront disponibles dans le wizard planogramme.</p>
+
+            <!-- PDF Drop Zone -->
+            <div class="upload-zone" id="pdfUploadZone" ondragover="onPDFDragOver(event)" ondragleave="onPDFDragLeave(event)" ondrop="onPDFDrop(event)" onclick="document.getElementById('pdfFileInput').click()">
+                <input type="file" class="upload-file-input" id="pdfFileInput" accept=".pdf,application/pdf" onchange="onPDFFileSelected(event)">
+                <div id="pdfUploadPrompt">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-title">Glissez votre PDF ici</div>
+                    <div class="upload-sub">ou cliquez pour choisir le fichier</div>
+                    <div class="format-pills">
+                        <span class="format-pill">PDF</span>
+                        <span class="format-pill" style="background:var(--teal-light);color:var(--teal-dark);">Désignation + Code CIP</span>
+                    </div>
+                </div>
+                <div id="pdfUploadStatus" style="display:none; font-size:0.9rem; font-weight:600; color:var(--teal-dark); text-align:center;"></div>
+            </div>
+
+            <!-- Progress bar -->
+            <div id="pdfProgressWrap" style="display:none; margin-top:1rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.82rem; color:var(--slate-500); margin-bottom:0.4rem;">
+                    <span id="pdfProgressLabel">Analyse du PDF en cours…</span>
+                    <span id="pdfProgressPct">0%</span>
+                </div>
+                <div style="background:var(--slate-200); border-radius:8px; height:8px; overflow:hidden;">
+                    <div id="pdfProgressBar" style="background:var(--teal); height:100%; width:0%; border-radius:8px; transition:width 0.3s;"></div>
+                </div>
+            </div>
+
+            <!-- PDF Preview (shown after parse) -->
+            <div id="pdfPreviewWrap" style="display:none; margin-top:1.25rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem;">
+                    <div>
+                        <h3 style="font-size:0.9rem; font-weight:700; margin-bottom:0.15rem;">Aperçu des produits détectés</h3>
+                        <p id="pdfPreviewSub" style="font-size:0.82rem; color:var(--slate-500);"></p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <button class="btn" style="font-size:0.82rem; padding:0.45rem 0.9rem; border:1px solid var(--slate-300); background:white; cursor:pointer; border-radius:8px;" onclick="resetPDFImport()">✖ Annuler</button>
+                        <button class="btn btn-primary" style="font-size:0.82rem;" id="pdfConfirmBtn" onclick="confirmPDFImport()">✅ Confirmer l'import</button>
+                    </div>
+                </div>
+                <div class="preview-wrap">
+                    <table class="preview-table" id="pdfPreviewTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Désignation</th>
+                                <th>Code CIP / EAN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pdfPreviewBody"></tbody>
+                    </table>
+                </div>
+                <p style="font-size:0.78rem; color:var(--slate-400); margin-top:0.5rem;">Affichage des 20 premiers produits. L'import complet est confirmé ci-dessus.</p>
+            </div>
+
+            <!-- Import result -->
+            <div id="pdfImportResult" style="display:none; margin-top:1rem;"></div>
+        </div>
+
+        <!-- Import history -->
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:0.25rem">🕐 Historique des imports</h2>
+            <p class="card-sub" style="margin-bottom:1rem">Retrouvez tous vos fichiers précédemment importés.</p>
+            <div id="importHistoryWrap">
+                <div class="loading">Chargement…</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══════════ TAB: AGENT PN13 ══════════ -->
+    <div id="tabAgent" style="display:none">
+
+        <!-- Status card -->
+        <div class="card">
+            <div class="agent-hero">
+                <div class="agent-icon">🔌</div>
+                <div style="flex:1">
+                    <h2 class="card-title">Agent Windows PN13</h2>
+                    <p class="card-sub">Service local installé sur le poste de la pharmacie — capture les mouvements de stock en temps réel via le protocole PN13-IS.</p>
+                    <div class="agent-status-row">
+                        <div class="agent-status-dot" id="agentDot"></div>
+                        <span class="agent-status-text" id="agentStatusText">Chargement…</span>
+                    </div>
+                    <div id="agentMetaRow" style="display:none; font-size:0.78rem; color:var(--slate-500); margin-top:0.25rem;">
+                        <span id="agentLastSeen"></span> · <span id="agentEventsTotal"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pharmacy Key -->
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:0.25rem">🔑 Clé pharmacie</h2>
+            <p class="card-sub" style="margin-bottom:0.75rem">Copiez cette clé dans la configuration de l'agent (<code>config.json</code>).</p>
+            <div id="keyLoadingNote" style="font-size:0.82rem;color:var(--slate-400)">Chargement…</div>
+            <div id="keyBoxWrap" style="display:none">
+                <div class="key-box">
+                    <span class="key-value" id="keyValue">—</span>
+                    <button class="key-copy-btn" id="keyCopyBtn" onclick="copyKey()">📋 Copier</button>
+                </div>
+                <p style="font-size:0.75rem;color:var(--slate-400);margin-top:0.25rem">Cette clé est unique à votre pharmacie. Ne la partagez pas.</p>
+            </div>
+        </div>
+
+        <!-- Download -->
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:0.25rem">📥 Télécharger l'agent</h2>
+            <p class="card-sub" style="margin-bottom:1.25rem">Exécutable Windows (64 bits). Installe un service qui démarre automatiquement avec Windows.</p>
+            <a class="btn btn-primary btn-lg" href="https://github.com/Polsia-Inc/shelfrx/releases/latest/download/shelfrx-agent-windows.zip" target="_blank" rel="noopener">
+                ⬇️ Télécharger ShelfRx Agent (Windows 64 bits)
+            </a>
+            <p style="font-size:0.75rem;color:var(--slate-400);margin-top:0.75rem">Node.js 18 inclus · Testé sur Windows 10 / Windows 11</p>
+        </div>
+
+        <!-- Installation steps -->
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:1rem">🛠️ Installation en 3 étapes</h2>
+            <ol class="install-steps">
+                <li class="install-step">
+                    <div class="install-step-num">1</div>
+                    <div class="install-step-text">
+                        <div class="install-step-title">Télécharger et décompresser</div>
+                        <div class="install-step-desc">Décompressez le ZIP sur le poste de la pharmacie (ex : <code>C:\ShelfRx\</code>). Vous obtenez <code>shelfrx-agent.exe</code> et <code>install.bat</code>.</div>
+                    </div>
+                </li>
+                <li class="install-step">
+                    <div class="install-step-num">2</div>
+                    <div class="install-step-text">
+                        <div class="install-step-title">Lancer l'installateur en Administrateur</div>
+                        <div class="install-step-desc">Clic droit sur <code>install.bat</code> → <strong>Exécuter en tant qu'administrateur</strong>. Le script installe le service Windows et ouvre le fichier de configuration.</div>
+                    </div>
+                </li>
+                <li class="install-step">
+                    <div class="install-step-num">3</div>
+                    <div class="install-step-text">
+                        <div class="install-step-title">Coller la clé pharmacie et démarrer</div>
+                        <div class="install-step-desc">Dans <code>config.json</code>, remplacez <code>pharmacy_key</code> par la clé affichée ci-dessus. Sauvegardez, puis lancez : <code>sc start ShelfRxAgent</code></div>
+                    </div>
+                </li>
+            </ol>
+            <div class="info-box">
+                <strong>⏱️ Latence cible :</strong> &lt; 10 secondes entre un mouvement en pharmacie et sa réception dans ShelfRx.<br>
+                Les événements sont stockés localement (SQLite) si la connexion internet est coupée — ils sont envoyés dès reconnexion.
+            </div>
+        </div>
+
+        <!-- LGO compatibility -->
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:0.35rem">🏥 Compatibilité LGO</h2>
+            <p class="card-sub" style="margin-bottom:0.25rem">Configurez votre logiciel de gestion pour envoyer les mouvements de stock à l'agent.</p>
+            <div class="lgo-compat-grid">
+                <div class="lgo-compat-card">
+                    <div class="lgo-compat-name">💊 Winpharma</div>
+                    <span class="lgo-compat-type badge-pn13">PN13 natif</span>
+                    <div class="lgo-compat-desc">Paramètres → Interfaces → PN13-IS<br>IP : <code>127.0.0.1</code> · Port : <code>5013</code></div>
+                </div>
+                <div class="lgo-compat-card">
+                    <div class="lgo-compat-name">🏥 LGPI / Pharmagest</div>
+                    <span class="lgo-compat-type badge-pn13">PN13 natif</span>
+                    <div class="lgo-compat-desc">Administration → Paramètres → Envoi PN13<br>IP : <code>127.0.0.1</code> · Port : <code>5013</code></div>
+                </div>
+                <div class="lgo-compat-card">
+                    <div class="lgo-compat-name">🦁 LEO / Isipharm</div>
+                    <span class="lgo-compat-type badge-csv">Fichier CSV</span>
+                    <div class="lgo-compat-desc">Configurer un export CSV automatique et renseigner le dossier dans <code>config.json</code> (leo_watch_path).</div>
+                </div>
+                <div class="lgo-compat-card">
+                    <div class="lgo-compat-name">⚙️ Autre LGO</div>
+                    <span class="lgo-compat-type badge-csv">CSV manuel</span>
+                    <div class="lgo-compat-desc">Utilisez l'onglet Import fichier pour importer vos exports CSV manuellement.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent events -->
+        <div class="card" id="recentEventsCard" style="display:none">
+            <h2 class="card-title" style="margin-bottom:0.25rem">📡 Événements récents</h2>
+            <p class="card-sub" style="margin-bottom:1rem">Les 10 derniers mouvements de stock reçus par l'agent.</p>
+            <div id="recentEventsWrap"></div>
+        </div>
+
+    </div><!-- /#tabAgent -->
+
+</div><!-- /.content -->
+</div><!-- /#mainContent -->
+
+<script>
+// ── AUTH ──
+const token = localStorage.getItem('shelfrx_token');
+const userRaw = localStorage.getItem('shelfrx_user');
+let currentUser = null;
+let currentConfig = null;
+let parsedRows = [];
+let parsedHeaders = [];
+let parsedFileName = '';
+
+if (!token || !userRaw) {
+    window.location.href = '/login?next=/app/stock';
+}
+
+try { currentUser = JSON.parse(userRaw); } catch {}
+if (!currentUser) window.location.href = '/login?next=/app/stock';
+
+function init() {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('userPillName').textContent = currentUser.pharmacy_name || currentUser.name || 'Mon compte';
+    const initials = (currentUser.name || '?').charAt(0).toUpperCase();
+    document.getElementById('userAvatar').textContent = initials;
+    loadConfig();
+    loadImportHistory();
+    loadNotifBadge();
+}
+
+async function loadNotifBadge() {
+    try {
+        const r = await fetch('/api/alerts/count', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!r.ok) return;
+        const data = await r.json();
+        const bell = document.getElementById('notifBell');
+        const badge = document.getElementById('notifBadge');
+        if (bell) bell.style.display = 'inline-flex';
+        if (badge && data.unread > 0) {
+            badge.textContent = data.unread > 99 ? '99+' : data.unread;
+            badge.style.display = 'inline-flex';
+        }
+    } catch(_) {}
+}
+
+async function loadConfig() {
+    try {
+        const r = await apiFetch('/api/stock/config');
+        if (r.ok) {
+            currentConfig = await r.json();
+            if (currentConfig && currentConfig.software) {
+                applyConfigToUI(currentConfig);
+            }
+        }
+    } catch {}
+}
+
+function applyConfigToUI(cfg) {
+    // Update status badge
+    const allChecked = cfg.checklist_export_activated && cfg.checklist_agent_installed && cfg.checklist_test_success;
+    const someChecked = cfg.checklist_export_activated || cfg.checklist_agent_installed || cfg.checklist_test_success;
+    const badge = document.getElementById('configStatusBadge');
+    if (allChecked) {
+        badge.className = 'status-badge connected';
+        badge.textContent = '✅ Connecté — ' + softwareName(cfg.software);
+    } else if (someChecked) {
+        badge.className = 'status-badge partial';
+        badge.textContent = '⚙️ En cours — ' + softwareName(cfg.software);
+    } else {
+        badge.className = 'status-badge not-configured';
+        badge.textContent = '⚙️ ' + softwareName(cfg.software) + ' sélectionné';
+    }
+    // Pre-select software card
+    document.querySelectorAll('.software-card').forEach(c => c.classList.remove('selected'));
+    const swCard = document.getElementById('sw-' + cfg.software);
+    if (swCard) swCard.classList.add('selected');
+    // Restore import software select
+    const sel = document.getElementById('importSoftwareSelect');
+    if (sel) sel.value = cfg.software;
+}
+
+function softwareName(sw) {
+    return { winpharma: 'Winpharma', lgpi: 'LGPI', leo: 'LEO', autre: 'Autre' }[sw] || sw;
+}
+
+// ── TABS ──
+function switchMainTab(tab) {
+    document.getElementById('tabGuide').style.display = tab === 'guide' ? 'block' : 'none';
+    document.getElementById('tabImport').style.display = tab === 'import' ? 'block' : 'none';
+    document.getElementById('tabAgent').style.display = tab === 'agent' ? 'block' : 'none';
+    document.getElementById('tabBtnGuide').classList.toggle('active', tab === 'guide');
+    document.getElementById('tabBtnImport').classList.toggle('active', tab === 'import');
+    document.getElementById('tabBtnAgent').classList.toggle('active', tab === 'agent');
+    if (tab === 'agent') loadAgentData();
+}
+
+// ── USER DROPDOWN ──
+function toggleUserDD() {
+    document.getElementById('userDD').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+    if (!e.target.closest('.user-pill')) document.getElementById('userDD').classList.remove('open');
+});
+
+function logout() {
+    localStorage.removeItem('shelfrx_token');
+    localStorage.removeItem('shelfrx_user');
+    window.location.href = '/login';
+}
+
+// ── API HELPER ──
+function apiFetch(url, opts = {}) {
+    return fetch(url, {
+        ...opts,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            ...(opts.headers || {})
+        }
+    });
+}
+
+// ══════════════════════════════════════════════════
+//  GUIDE INTERACTIF
+// ══════════════════════════════════════════════════
+
+// Guide data per LGO
+const GUIDES = {
+    winpharma: {
+        name: 'Winpharma',
+        emoji: '💊',
+        type: 'pn13',
+        steps: [
+            {
+                title: 'Ouvrir la configuration PN13',
+                desc: `<p>Dans Winpharma, accédez au menu de configuration du flux PN13 :</p>`,
+                path: ['Paramètres', 'Configuration système', 'Échanges PN13'],
+                detail: `<p>Cette section contrôle l'envoi automatique de vos mouvements de stock vers les systèmes tiers comme ShelfRx.</p>`,
+                illustration: makeMenuSVG(['Paramètres', 'Config. système', 'Échanges PN13'])
+            },
+            {
+                title: 'Activer l\'export automatique',
+                desc: `<p>Dans la section "Émissions PN13", activez l'option :</p>`,
+                path: ['Activer l\'émission PN13', '✓ Cocher "Envoi automatique"'],
+                detail: `<p>Réglez la fréquence sur <strong>"À chaque mouvement de stock"</strong> pour une synchronisation temps réel. Optionnel : activez aussi les exports de nuit pour rattraper les éventuels écarts.</p>`,
+                illustration: makeToggleSVG('Envoi automatique PN13', true)
+            },
+            {
+                title: 'Configurer l\'IP et le port',
+                desc: `<p>Saisissez les coordonnées réseau du poste où tourne l'agent ShelfRx :</p>`,
+                path: ['IP Récepteur : <IP de votre poste>', 'Port : 4200'],
+                detail: `<div class="info-box"><strong>💡 Trouver votre IP :</strong> Sur Windows, ouvrez un terminal (Cmd) et tapez <code style="font-size:0.85em">ipconfig</code>. Cherchez "Adresse IPv4" — ex. <code style="font-size:0.85em">192.168.1.42</code>.</div>`,
+                illustration: makeIpSVG()
+            },
+            {
+                title: 'Tester la connexion',
+                desc: `<p>Utilisez la fonction de test intégrée pour vérifier la connexion :</p>`,
+                path: ['Outils', 'Test émission PN13', 'Envoyer un test'],
+                detail: `<p>Vous devriez voir apparaître un message de confirmation "Réception OK". Si le test échoue, vérifiez que l'agent ShelfRx est bien démarré sur le poste cible.</p><div class="warn-box">⚠️ Si le test échoue : vérifiez que le pare-feu Windows autorise le port 4200 en entrée.</div>`,
+                illustration: makeTestSVG(true)
+            }
+        ],
+        checklist: [
+            { key: 'export', label: 'Export PN13 activé dans Winpharma', sub: 'Menu Paramètres → Configuration système → Échanges PN13' },
+            { key: 'agent', label: 'Agent ShelfRx installé sur mon poste', sub: 'Téléchargez l\'agent depuis le lien ci-dessous et lancez-le.', link: '#agent-download', linkText: '⬇️ Télécharger l\'agent ShelfRx (bientôt disponible)' },
+            { key: 'test', label: 'Test de connexion réussi', sub: 'Outils → Test émission PN13 → Réception OK affiché' }
+        ]
+    },
+    lgpi: {
+        name: 'LGPI / Pharmagest',
+        emoji: '🏥',
+        type: 'pn13',
+        steps: [
+            {
+                title: 'Ouvrir les paramètres système',
+                desc: `<p>Dans LGPI, accédez aux paramètres de configuration des échanges :</p>`,
+                path: ['Paramètres', 'Configuration système'],
+                detail: `<p>Si vous n\'avez pas accès à ce menu, contactez votre administrateur pharmacie ou le support Pharmagest pour activer les droits d'échange.</p>`,
+                illustration: makeMenuSVG(['Paramètres', 'Config. système'])
+            },
+            {
+                title: 'Section Échanges → PN13-IS',
+                desc: `<p>Dans les paramètres système, ouvrez l'onglet "Échanges" :</p>`,
+                path: ['Onglet "Échanges"', 'Section "PN13-IS"', 'Activer le flux temps réel'],
+                detail: `<p>Cochez <strong>"Activer le flux PN13-IS en temps réel"</strong>. Cette option envoie automatiquement chaque mouvement de stock à l'agent ShelfRx dès qu'il se produit.</p>`,
+                illustration: makeToggleSVG('Flux PN13-IS temps réel', true)
+            },
+            {
+                title: 'Configurer IP et port',
+                desc: `<p>Saisissez l'adresse réseau du poste où tourne l'agent ShelfRx :</p>`,
+                path: ['IP Récepteur : <IP de votre poste>', 'Port : 4200', 'Protocole : TCP'],
+                detail: `<div class="info-box"><strong>💡 Trouver votre IP :</strong> Sur Windows → Cmd → <code style="font-size:0.85em">ipconfig</code> → "Adresse IPv4".</div>`,
+                illustration: makeIpSVG()
+            },
+            {
+                title: 'Enregistrer et redémarrer',
+                desc: `<p>Validez la configuration puis redémarrez le service LGPI :</p>`,
+                path: ['Cliquer "Enregistrer"', 'Services Windows → Redémarrer "LGPIService"'],
+                detail: `<p>Après redémarrage, attendez 30 secondes que le service démarre complètement. Vérifiez dans les logs LGPI (menu Outils → Logs) que la ligne "PN13: Connexion établie" apparaît.</p>`,
+                illustration: makeTestSVG(true)
+            }
+        ],
+        checklist: [
+            { key: 'export', label: 'Flux PN13-IS activé dans LGPI', sub: 'Paramètres → Configuration système → Onglet Échanges → PN13-IS' },
+            { key: 'agent', label: 'Agent ShelfRx installé sur mon poste', sub: 'Téléchargez et démarrez l\'agent sur le poste cible.', link: '#agent-download', linkText: '⬇️ Télécharger l\'agent ShelfRx (bientôt disponible)' },
+            { key: 'test', label: 'Service LGPI redémarré et connexion active', sub: 'Log LGPI : "PN13: Connexion établie" visible' }
+        ]
+    },
+    leo: {
+        name: 'LEO / Isipharm',
+        emoji: '🦁',
+        type: 'csv',
+        steps: [
+            {
+                title: 'Accéder à l\'export stock',
+                desc: `<p>LEO ne dispose pas de flux PN13 natif. La connexion ShelfRx se fait via export CSV périodique. Dans LEO :</p>`,
+                path: ['Stocks', 'Exports', 'Export stock complet'],
+                detail: `<p>Si votre version de LEO ne propose pas ce menu, recherchez "Export" dans la barre de recherche ou consultez le manuel Isipharm section "Exports de données".</p>`,
+                illustration: makeMenuSVG(['Stocks', 'Exports', 'Export stock'])
+            },
+            {
+                title: 'Configurer le format d\'export',
+                desc: `<p>Paramétrez l'export pour obtenir le format compatible ShelfRx :</p>`,
+                path: ['Format : CSV (séparateur ; ou ,)', 'Colonnes : Code CIP • Libellé • Qté en stock', '(Optionnel) : Prix HT • Fournisseur'],
+                detail: `<div class="info-box"><strong>Colonnes obligatoires :</strong> Code CIP13 (ou EAN13), Libellé du produit, Quantité en stock.<br><br><strong>Encodage :</strong> Préférez UTF-8. Si les accents s\'affichent mal, essayez ISO-8859-1.</div>`,
+                illustration: makeCSVSVG()
+            },
+            {
+                title: 'Importer dans ShelfRx',
+                desc: `<p>Deux options selon votre fréquence de mise à jour souhaitée :</p>`,
+                path: ['Option A : Export manuel → Import ici', 'Option B : Export planifié (hebdo) → Import régulier'],
+                detail: `<p><strong>Option A — Manuel :</strong> Exportez depuis LEO puis importez ici dans l'onglet "Import fichier". Idéal pour les premières fois.</p><p style="margin-top:0.5rem"><strong>Option B — Automatique :</strong> Configurez un export planifié dans LEO (ex. tous les lundis) et importez le fichier chaque semaine ici. Fréquence recommandée : hebdomadaire.</p>`,
+                illustration: makeFlowSVG()
+            }
+        ],
+        checklist: [
+            { key: 'export', label: 'Export stock CSV configuré dans LEO', sub: 'Stocks → Exports → Export stock complet → Format CSV avec CIP + Qté' },
+            { key: 'agent', label: 'Format des colonnes vérifié', sub: 'Vérifiez que votre export contient bien les colonnes CIP, Libellé, Quantité.' },
+            { key: 'test', label: 'Premier import réussi dans ShelfRx', sub: 'Importez votre premier fichier dans l\'onglet "Import fichier" ci-contre.' }
+        ]
+    },
+    autre: {
+        name: 'Autre logiciel',
+        emoji: '⚙️',
+        type: 'csv',
+        steps: [
+            {
+                title: 'Exporter votre stock en CSV',
+                desc: `<p>Depuis votre logiciel de gestion, exportez le stock au format CSV ou Excel :</p>`,
+                path: ['Recherchez un menu "Export" ou "Extraction"', 'Choisissez CSV ou Excel (.xlsx)', 'Sélectionnez les colonnes nécessaires'],
+                detail: `<p>La plupart des logiciels de gestion proposent une fonctionnalité d'export. Si vous ne trouvez pas, consultez l'aide de votre logiciel ou contactez votre éditeur.</p>`,
+                illustration: makeCSVSVG()
+            },
+            {
+                title: 'Vérifier le format des colonnes',
+                desc: `<p>ShelfRx a besoin de ces informations pour chaque produit :</p>`,
+                path: ['Code CIP13 ou EAN13 (obligatoire)', 'Nom / Libellé du produit (obligatoire)', 'Quantité en stock (obligatoire)', 'Prix HT (optionnel) • Fournisseur (optionnel)'],
+                detail: `<div class="info-box"><strong>💡 Conseil :</strong> Si votre export contient d'autres colonnes, ce n'est pas un problème — vous pourrez faire correspondre les colonnes lors de l'import. Utilisez notre template CSV (onglet Import) comme référence.</div>`,
+                illustration: makeCSVSVG()
+            },
+            {
+                title: 'Importer dans ShelfRx',
+                desc: `<p>Une fois votre fichier prêt, importez-le dans l'onglet "Import fichier" :</p>`,
+                path: ['Onglet "Import fichier"', 'Glissez votre fichier CSV ou Excel', 'Vérifiez l\'aperçu et confirmez'],
+                detail: `<p>ShelfRx analysera votre fichier, détectera les colonnes automatiquement et vous proposera de les corriger si nécessaire. Un aperçu des 10 premières lignes sera affiché avant l'import final.</p>`,
+                illustration: makeFlowSVG()
+            }
+        ],
+        checklist: [
+            { key: 'export', label: 'Export stock généré depuis mon logiciel', sub: 'Format CSV ou Excel avec au minimum : CIP/EAN, Libellé, Quantité' },
+            { key: 'agent', label: 'Format des colonnes vérifié', sub: 'Toutes les colonnes obligatoires sont présentes dans le fichier.' },
+            { key: 'test', label: 'Premier import réussi dans ShelfRx', sub: 'Fichier importé avec succès dans l\'onglet "Import fichier".' }
+        ]
+    }
+};
+
+// ── SVG ILLUSTRATIONS ──
+function makeMenuSVG(path) {
+    const items = path.map((p, i) => {
+        const isLast = i === path.length - 1;
+        const y = 20 + i * 32;
+        const indent = i * 18;
+        return `
+            <rect x="${10 + indent}" y="${y - 11}" width="${200 - indent * 0.5}" height="24" rx="5" fill="${isLast ? '#0D9488' : '#f1f5f9'}" />
+            <text x="${18 + indent}" y="${y + 5}" font-family="Arial" font-size="11" fill="${isLast ? '#fff' : '#334155'}" font-weight="${isLast ? '600' : '400'}">${p}</text>
+            ${!isLast ? `<text x="${202}" y="${y + 5}" font-family="Arial" font-size="11" fill="#94a3b8">›</text>` : ''}
+        `;
+    });
+    const h = 20 + path.length * 32;
+    return `<svg width="220" height="${h}" viewBox="0 0 220 ${h}" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;border:1px solid #e2e8f0;background:white;padding:10px">
+        <rect width="220" height="${h}" rx="10" fill="white"/>
+        <rect x="0" y="0" width="220" height="18" rx="10" fill="#f8fafc"/>
+        <circle cx="14" cy="9" r="4" fill="#ef4444"/><circle cx="26" cy="9" r="4" fill="#f59e0b"/><circle cx="38" cy="9" r="4" fill="#10b981"/>
+        ${items.join('')}
+    </svg>`;
+}
+
+function makeToggleSVG(label, isOn) {
+    return `<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;border:1px solid #e2e8f0;background:white">
+        <rect width="200" height="60" rx="10" fill="white"/>
+        <text x="12" y="23" font-family="Arial" font-size="11" fill="#64748b">Paramètre</text>
+        <text x="12" y="42" font-family="Arial" font-size="12" fill="#0f172a" font-weight="600">${label}</text>
+        <rect x="148" y="28" width="38" height="20" rx="10" fill="${isOn ? '#0D9488' : '#cbd5e1'}"/>
+        <circle cx="${isOn ? '176' : '158'}" cy="38" r="8" fill="white"/>
+        <text x="${isOn ? '148' : '155'}" y="23" font-family="Arial" font-size="10" fill="${isOn ? '#0D9488' : '#94a3b8'}" font-weight="600">${isOn ? 'ON' : 'OFF'}</text>
+    </svg>`;
+}
+
+function makeIpSVG() {
+    return `<svg width="210" height="80" viewBox="0 0 210 80" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;border:1px solid #e2e8f0;background:white">
+        <rect width="210" height="80" rx="10" fill="white"/>
+        <text x="12" y="20" font-family="Arial" font-size="10" fill="#64748b" font-weight="600">IP Récepteur</text>
+        <rect x="10" y="26" width="120" height="20" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="16" y="40" font-family="monospace" font-size="11" fill="#0D9488">192.168.1.42</text>
+        <text x="12" y="62" font-family="Arial" font-size="10" fill="#64748b" font-weight="600">Port</text>
+        <rect x="10" y="67" width="55" height="8" rx="3" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="16" y="73" font-family="monospace" font-size="9" fill="#0D9488">4200</text>
+    </svg>`;
+}
+
+function makeTestSVG(success) {
+    return `<svg width="200" height="70" viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;border:1px solid #e2e8f0;background:white">
+        <rect width="200" height="70" rx="10" fill="white"/>
+        <rect x="10" y="10" width="80" height="24" rx="6" fill="${success ? '#0D9488' : '#64748b'}"/>
+        <text x="25" y="26" font-family="Arial" font-size="11" fill="white" font-weight="600">▶ Tester</text>
+        <rect x="10" y="44" width="175" height="18" rx="5" fill="${success ? '#d1fae5' : '#fee2e2'}"/>
+        <text x="18" y="56" font-family="Arial" font-size="10" fill="${success ? '#065f46' : '#b91c1c'}" font-weight="600">${success ? '✅ Réception OK — Connexion établie' : '❌ Erreur — Vérifier IP/Port'}</text>
+    </svg>`;
+}
+
+function makeCSVSVG() {
+    const rows = [['Code CIP', 'Libellé', 'Qté'], ['3400936425419', 'DOLIPRANE 1g', '24'], ['3400938493372', 'IBUPROFEN 400', '12']];
+    const items = rows.map((r, ri) => {
+        const y = 22 + ri * 18;
+        const isTh = ri === 0;
+        return `<rect x="0" y="${y - 12}" width="210" height="18" fill="${isTh ? '#f1f5f9' : ri % 2 === 0 ? 'white' : '#fafafa'}"/>
+        <text x="6" y="${y}" font-family="monospace" font-size="9" fill="${isTh ? '#64748b' : '#334155'}" font-weight="${isTh ? '700' : '400'}">${r[0]}</text>
+        <text x="80" y="${y}" font-family="monospace" font-size="9" fill="${isTh ? '#64748b' : '#334155'}">${r[1]}</text>
+        <text x="168" y="${y}" font-family="monospace" font-size="9" fill="${isTh ? '#64748b' : '#334155'}">${r[2]}</text>`;
+    });
+    return `<svg width="210" height="70" viewBox="0 0 210 70" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;border:1px solid #e2e8f0;background:white;overflow:hidden">
+        ${items.join('')}
+        <line x1="0" y1="28" x2="210" y2="28" stroke="#e2e8f0" stroke-width="1"/>
+        <line x1="74" y1="10" x2="74" y2="70" stroke="#e2e8f0" stroke-width="1"/>
+        <line x1="163" y1="10" x2="163" y2="70" stroke="#e2e8f0" stroke-width="1"/>
+    </svg>`;
+}
+
+function makeFlowSVG() {
+    return `<svg width="210" height="70" viewBox="0 0 210 70" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;border:1px solid #e2e8f0;background:white">
+        <rect x="5" y="20" width="58" height="30" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="34" y="33" font-family="Arial" font-size="9" fill="#334155" text-anchor="middle" font-weight="600">Votre LGO</text>
+        <text x="34" y="44" font-family="Arial" font-size="8" fill="#64748b" text-anchor="middle">Export CSV</text>
+        <line x1="65" y1="35" x2="90" y2="35" stroke="#cbd5e1" stroke-width="1.5" marker-end="url(#arr)"/>
+        <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+        <rect x="90" y="20" width="55" height="30" rx="8" fill="#f0fdfa" stroke="#0D9488" stroke-width="1.5"/>
+        <text x="117" y="33" font-family="Arial" font-size="9" fill="#0D9488" text-anchor="middle" font-weight="600">ShelfRx</text>
+        <text x="117" y="44" font-family="Arial" font-size="8" fill="#0F766E" text-anchor="middle">Import</text>
+        <line x1="147" y1="35" x2="172" y2="35" stroke="#cbd5e1" stroke-width="1.5" marker-end="url(#arr)"/>
+        <rect x="172" y="20" width="32" height="30" rx="8" fill="#f0fdfa" stroke="#0D9488" stroke-width="1.5"/>
+        <text x="188" y="33" font-family="Arial" font-size="11" text-anchor="middle">📊</text>
+        <text x="188" y="45" font-family="Arial" font-size="7" fill="#0F766E" text-anchor="middle">Stock</text>
+    </svg>`;
+}
+
+// ── GUIDE STATE ──
+let currentSoftware = null;
+let currentStep = 0;
+
+function selectSoftware(sw) {
+    currentSoftware = sw;
+    currentStep = 0;
+    document.querySelectorAll('.software-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('sw-' + sw).classList.add('selected');
+    document.getElementById('softwareSelector').style.display = 'none';
+    document.getElementById('stepGuideWrap').style.display = 'block';
+    const guide = GUIDES[sw];
+    document.getElementById('guideLgoName').textContent = guide.emoji + ' ' + guide.name;
+    renderStepper();
+    renderStep();
+    // Save software selection
+    saveConfig({ software: sw, connection_type: guide.type });
+}
+
+function backToSelector() {
+    document.getElementById('softwareSelector').style.display = 'block';
+    document.getElementById('stepGuideWrap').style.display = 'none';
+    document.getElementById('checklistCard').style.display = 'none';
+}
+
+function renderStepper() {
+    const guide = GUIDES[currentSoftware];
+    const steps = [...guide.steps, { title: 'Checklist' }];
+    let html = '';
+    steps.forEach((s, i) => {
+        const isDone = i < currentStep;
+        const isActive = i === currentStep;
+        if (i > 0) {
+            html += `<div class="step-connector ${isDone ? 'done' : ''}"></div>`;
+        }
+        const circleClass = isActive ? 'active' : (isDone ? 'done' : '');
+        const labelClass = isActive ? 'active' : '';
+        const label = i === steps.length - 1 ? 'Checklist' : (s.title.length > 12 ? s.title.substring(0, 12) + '…' : s.title);
+        html += `<div class="step-dot-wrap step-dot" onclick="goToStep(${i})">
+            <div class="step-circle ${circleClass}">${isDone ? '✓' : i + 1}</div>
+            <div class="step-label ${labelClass}">${label}</div>
+        </div>`;
+    });
+    document.getElementById('guideStepper').innerHTML = html;
+}
+
+function renderStep() {
+    const guide = GUIDES[currentSoftware];
+    const isChecklist = currentStep === guide.steps.length;
+    document.getElementById('stepContentCard').style.display = isChecklist ? 'none' : 'block';
+    document.getElementById('checklistCard').style.display = isChecklist ? 'block' : 'none';
+
+    if (isChecklist) {
+        renderChecklist();
+        document.getElementById('btnNext').style.display = 'none';
+        document.getElementById('btnPrev').style.display = 'block';
+        return;
+    }
+
+    const step = guide.steps[currentStep];
+    const pathHtml = step.path.map(p => `<span class="menu-step">${p}</span>`).join('<span style="color:#94a3b8;font-size:0.8rem;">›</span>');
+
+    let illustrationHtml = '';
+    if (step.illustration) {
+        illustrationHtml = `<div class="step-illustration">${step.illustration}</div>`;
+    }
+
+    document.getElementById('stepContent').innerHTML = `
+        <div class="step-content-inner">
+            <div class="step-text">
+                <div class="step-number-badge">${currentStep + 1}</div>
+                <h3 class="step-title">${step.title}</h3>
+                <div class="step-desc">${step.desc}
+                    <div class="menu-path" style="margin:0.6rem 0">${pathHtml}</div>
+                    ${step.detail}
+                </div>
+            </div>
+            ${illustrationHtml}
+        </div>
+    `;
+
+    document.getElementById('btnPrev').style.display = currentStep > 0 ? 'block' : 'none';
+    document.getElementById('btnNext').style.display = 'block';
+    document.getElementById('btnNext').textContent = currentStep === guide.steps.length - 1 ? 'Terminer → Checklist' : 'Étape suivante →';
+    renderStepper();
+}
+
+function goToStep(i) {
+    const guide = GUIDES[currentSoftware];
+    if (i <= guide.steps.length) {
+        currentStep = i;
+        renderStep();
+    }
+}
+
+function nextStep() {
+    const guide = GUIDES[currentSoftware];
+    if (currentStep < guide.steps.length) {
+        currentStep++;
+        renderStep();
+    }
+}
+
+function prevStep() {
+    if (currentStep > 0) {
+        currentStep--;
+        renderStep();
+    }
+}
+
+// ── CHECKLIST ──
+function renderChecklist() {
+    const guide = GUIDES[currentSoftware];
+    const cfg = currentConfig || {};
+    const checkState = {
+        export: cfg.checklist_export_activated || false,
+        agent: cfg.checklist_agent_installed || false,
+        test: cfg.checklist_test_success || false
+    };
+    const items = guide.checklist;
+    let html = '';
+    items.forEach((item, i) => {
+        const isChecked = checkState[item.key];
+        html += `
+            <div class="checklist-item" onclick="toggleCheck('${item.key}', ${i})">
+                <div class="check-box ${isChecked ? 'checked' : ''}" id="checkBox-${i}">
+                    ${isChecked ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+                </div>
+                <div class="check-label">
+                    <div class="check-title">${item.label}</div>
+                    <div class="check-sub">${item.sub}${item.link ? ` — <a class="check-link" href="${item.link}" onclick="event.stopPropagation()">${item.linkText}</a>` : ''}</div>
+                </div>
+            </div>`;
+    });
+    document.getElementById('checklistItems').innerHTML = html;
+    updateReadyBadge(checkState);
+}
+
+async function toggleCheck(key, i) {
+    if (!currentConfig) currentConfig = {};
+    const keyMap = { export: 'checklist_export_activated', agent: 'checklist_agent_installed', test: 'checklist_test_success' };
+    const field = keyMap[key];
+    currentConfig[field] = !currentConfig[field];
+    renderChecklist();
+    await saveConfig({
+        software: currentSoftware,
+        checklist_export_activated: currentConfig.checklist_export_activated || false,
+        checklist_agent_installed: currentConfig.checklist_agent_installed || false,
+        checklist_test_success: currentConfig.checklist_test_success || false
+    });
+    updateStatusBadge();
+}
+
+function updateReadyBadge(checkState) {
+    const allChecked = Object.values(checkState).every(v => v);
+    document.getElementById('readyBadge').style.display = allChecked ? 'inline-flex' : 'none';
+    document.getElementById('notReadyNote').style.display = allChecked ? 'none' : 'block';
+}
+
+function updateStatusBadge() {
+    const cfg = currentConfig || {};
+    const sw = cfg.software || currentSoftware;
+    const allChecked = cfg.checklist_export_activated && cfg.checklist_agent_installed && cfg.checklist_test_success;
+    const someChecked = cfg.checklist_export_activated || cfg.checklist_agent_installed || cfg.checklist_test_success;
+    const badge = document.getElementById('configStatusBadge');
+    if (allChecked) {
+        badge.className = 'status-badge connected';
+        badge.textContent = '✅ Connecté — ' + softwareName(sw);
+    } else if (someChecked || sw) {
+        badge.className = 'status-badge partial';
+        badge.textContent = '⚙️ En cours — ' + softwareName(sw);
+    }
+}
+
+async function saveConfig(data) {
+    try {
+        const r = await apiFetch('/api/stock/config', {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        if (r.ok) {
+            currentConfig = await r.json();
+        }
+    } catch {}
+}
+
+// Restore guide from config on page load
+function restoreGuideFromConfig() {
+    if (currentConfig && currentConfig.software) {
+        // Don't auto-open the guide, just highlight the card
+        document.querySelectorAll('.software-card').forEach(c => c.classList.remove('selected'));
+        const swCard = document.getElementById('sw-' + currentConfig.software);
+        if (swCard) swCard.classList.add('selected');
+    }
+}
+
+// ══════════════════════════════════════════════════
+//  IMPORT FICHIER
+// ══════════════════════════════════════════════════
+
+function saveImportSoftware() {
+    const sw = document.getElementById('importSoftwareSelect').value;
+    saveConfig({ software: sw });
+}
+
+// ── DRAG & DROP ──
+function onDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
+function onDragLeave() { document.getElementById('uploadZone').classList.remove('drag-over'); }
+function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+}
+function onFileSelected(e) {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+}
+
+function processFile(file) {
+    parsedFileName = file.name;
+    const ext = file.name.toLowerCase().split('.').pop();
+    document.getElementById('uploadZone').classList.add('has-file');
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('uploadFileName').style.display = 'block';
+    document.getElementById('uploadFileName').innerHTML = `📄 <strong>${file.name}</strong> (${formatBytes(file.size)}) — Analyse en cours…`;
+    document.getElementById('colMappingWrap').style.display = 'none';
+    document.getElementById('previewWrap').style.display = 'none';
+    document.getElementById('importResult').style.display = 'none';
+
+    if (ext === 'csv') {
+        const reader = new FileReader();
+        reader.onload = e => parseCSV(e.target.result);
+        reader.readAsText(file, 'UTF-8');
+        // Retry with latin1 if garbled
+    } else if (ext === 'xlsx' || ext === 'xls') {
+        const reader = new FileReader();
+        reader.onload = e => parseXLSX(e.target.result);
+        reader.readAsArrayBuffer(file);
+    } else {
+        showFileError('Format non supporté. Utilisez CSV, XLSX ou XLS.');
+    }
+}
+
+function parseCSV(content) {
+    // Try to detect delimiter
+    const firstLine = content.split('\n')[0];
+    const delim = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+    const result = Papa.parse(content, { delimiter: delim, skipEmptyLines: true, header: false });
+    if (result.errors.length > 0 && result.data.length === 0) {
+        showFileError('Impossible de parser le fichier CSV. Vérifiez l\'encodage (UTF-8 recommandé).');
+        return;
+    }
+    handleParsedData(result.data);
+}
+
+function parseXLSX(buffer) {
+    try {
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        handleParsedData(data);
+    } catch (e) {
+        showFileError('Impossible de lire le fichier Excel. Vérifiez qu\'il n\'est pas corrompu.');
+    }
+}
+
+function handleParsedData(data) {
+    if (!data || data.length < 2) {
+        showFileError('Le fichier est vide ou ne contient qu\'une ligne d\'en-tête.');
+        return;
+    }
+    parsedHeaders = (data[0] || []).map(h => String(h).trim());
+    parsedRows = data.slice(1).filter(r => r.some(c => String(c).trim() !== ''));
+
+    document.getElementById('uploadFileName').innerHTML = `✅ <strong>${parsedFileName}</strong> — ${parsedRows.length} lignes détectées`;
+
+    // Auto-detect column mapping
+    const cipIdx = autoDetect(parsedHeaders, ['cip', 'code_cip', 'code cip', 'cip13', 'ean', 'ean13', 'code']);
+    const nameIdx = autoDetect(parsedHeaders, ['libelle', 'libellé', 'nom', 'name', 'désignation', 'designation', 'produit']);
+    const qtyIdx = autoDetect(parsedHeaders, ['quantite', 'quantité', 'qte', 'qté', 'qty', 'stock', 'quantite_stock', 'qte_stock']);
+    const priceIdx = autoDetect(parsedHeaders, ['prix', 'price', 'pht', 'prix_ht']);
+    const supplierIdx = autoDetect(parsedHeaders, ['fournisseur', 'supplier', 'fourn']);
+
+    renderColMapping(cipIdx, nameIdx, qtyIdx, priceIdx, supplierIdx);
+    renderPreview(cipIdx, nameIdx, qtyIdx, 10);
+}
+
+function autoDetect(headers, keywords) {
+    const normalized = headers.map(h => h.toLowerCase().replace(/[\s_-]/g, ''));
+    for (const kw of keywords) {
+        const kn = kw.replace(/[\s_-]/g, '');
+        const i = normalized.findIndex(h => h.includes(kn));
+        if (i >= 0) return i;
+    }
+    return -1;
+}
+
+function renderColMapping(cipIdx, nameIdx, qtyIdx, priceIdx, supplierIdx) {
+    const options = ['— Non mappé —', ...parsedHeaders].map((h, i) => `<option value="${i - 1}">${h}</option>`).join('');
+    const makeSelect = (id, label, val) => `
+        <div class="col-map-item">
+            <label class="col-map-label">${label}</label>
+            <select class="col-map-select" id="${id}" onchange="updatePreview()">
+                ${['— Non mappé —', ...parsedHeaders].map((h, i) => `<option value="${i - 1}" ${(i - 1) === val ? 'selected' : ''}>${h}</option>`).join('')}
+            </select>
+        </div>`;
+
+    document.getElementById('colMappingGrid').innerHTML = `
+        ${makeSelect('mapCip', '📦 Code CIP/EAN *', cipIdx)}
+        ${makeSelect('mapName', '📝 Nom produit *', nameIdx)}
+        ${makeSelect('mapQty', '🔢 Quantité *', qtyIdx)}
+        ${makeSelect('mapPrice', '💶 Prix HT', priceIdx)}
+        ${makeSelect('mapSupplier', '🏭 Fournisseur', supplierIdx)}
+    `;
+    document.getElementById('colMappingWrap').style.display = 'block';
+    updatePreview();
+}
+
+function updatePreview() {
+    const cipIdx = parseInt(document.getElementById('mapCip').value);
+    const nameIdx = parseInt(document.getElementById('mapName').value);
+    const qtyIdx = parseInt(document.getElementById('mapQty').value);
+    renderPreview(cipIdx, nameIdx, qtyIdx, 10);
+}
+
+function renderPreview(cipIdx, nameIdx, qtyIdx, limit) {
+    const rows = parsedRows.slice(0, limit);
+    let html = '';
+    rows.forEach((row, ri) => {
+        const cip = cipIdx >= 0 ? String(row[cipIdx] || '').trim() : '—';
+        const name = nameIdx >= 0 ? String(row[nameIdx] || '').trim() : '—';
+        const qty = qtyIdx >= 0 ? String(row[qtyIdx] || '').trim() : '—';
+        const cipOk = cip !== '—' && /^\d{7,13}$/.test(cip.replace(/\s/g, ''));
+        const qtyOk = qty !== '—' && !isNaN(parseFloat(qty));
+        const hasError = (cipIdx >= 0 && !cipOk) || (qtyIdx >= 0 && !qtyOk);
+        html += `<tr class="${hasError ? 'error-row' : ''}">
+            <td>${ri + 1}</td>
+            <td>${cip}${cipIdx >= 0 && !cipOk && cip !== '—' ? '<div class="cell-error">CIP invalide</div>' : ''}</td>
+            <td>${name}</td>
+            <td>${qty}${qtyIdx >= 0 && !qtyOk && qty !== '—' ? '<div class="cell-error">Valeur non numérique</div>' : ''}</td>
+        </tr>`;
+    });
+
+    document.getElementById('previewHead').innerHTML = `<tr><th>#</th><th>Code CIP</th><th>Nom</th><th>Quantité</th></tr>`;
+    document.getElementById('previewBody').innerHTML = html;
+    document.getElementById('previewCount').textContent = `(${Math.min(limit, parsedRows.length)} sur ${parsedRows.length})`;
+    document.getElementById('previewWrap').style.display = 'block';
+}
+
+async function runImport() {
+    const cipIdx = parseInt(document.getElementById('mapCip').value);
+    const nameIdx = parseInt(document.getElementById('mapName').value);
+    const qtyIdx = parseInt(document.getElementById('mapQty').value);
+    const priceIdx = parseInt(document.getElementById('mapPrice').value);
+    const supplierIdx = parseInt(document.getElementById('mapSupplier').value);
+    const software = document.getElementById('importSoftwareSelect').value;
+
+    // Validate required fields
+    if (cipIdx < 0 || nameIdx < 0 || qtyIdx < 0) {
+        showImportResult('error', '⚠️ Colonnes manquantes', 'Mappez les colonnes CIP, Nom et Quantité avant d\'importer.');
+        return;
+    }
+
+    let productCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    parsedRows.forEach((row, i) => {
+        const cip = String(row[cipIdx] || '').trim().replace(/\s/g, '');
+        const name = String(row[nameIdx] || '').trim();
+        const qty = parseFloat(String(row[qtyIdx] || '').replace(',', '.'));
+
+        if (!cip || !/^\d{7,13}$/.test(cip)) {
+            errorCount++;
+            errors.push({ row: i + 2, field: 'CIP', value: cip, message: 'Code CIP invalide' });
+        } else if (isNaN(qty) || qty < 0) {
+            errorCount++;
+            errors.push({ row: i + 2, field: 'Quantité', value: row[qtyIdx], message: 'Quantité invalide' });
+        } else {
+            productCount++;
+        }
+    });
+
+    // Record the import
+    try {
+        const r = await apiFetch('/api/stock/import', {
+            method: 'POST',
+            body: JSON.stringify({ file_name: parsedFileName, software, product_count: productCount, error_count: errorCount, errors_json: errors.slice(0, 50) })
+        });
+
+        if (r.ok) {
+            if (errorCount === 0) {
+                showImportResult('success', `✅ ${productCount} produit${productCount > 1 ? 's' : ''} importé${productCount > 1 ? 's' : ''}`, 'Votre stock a été importé avec succès dans ShelfRx.');
+            } else if (productCount > 0) {
+                showImportResult('partial', `⚠️ ${productCount} importé${productCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}`, `${errorCount} ligne${errorCount > 1 ? 's' : ''} ignorée${errorCount > 1 ? 's' : ''} (CIP ou quantité invalide). Vérifiez les lignes surlignées dans l'aperçu.`);
+            } else {
+                showImportResult('error', '❌ Import échoué', `${errorCount} erreur${errorCount > 1 ? 's' : ''} — aucun produit valide trouvé. Vérifiez le mapping des colonnes.`);
+            }
+            loadImportHistory();
+        }
+    } catch (e) {
+        showImportResult('error', '❌ Erreur réseau', 'Impossible de contacter le serveur. Réessayez.');
+    }
+}
+
+function showImportResult(type, title, sub) {
+    document.getElementById('importResult').style.display = 'block';
+    document.getElementById('importResult').innerHTML = `
+        <div class="import-result ${type}">
+            <div class="import-result-icon">${type === 'success' ? '✅' : type === 'partial' ? '⚠️' : '❌'}</div>
+            <div>
+                <div class="import-result-title">${title}</div>
+                <div class="import-result-sub">${sub}</div>
+            </div>
+        </div>`;
+}
+
+function showFileError(msg) {
+    document.getElementById('uploadFileName').innerHTML = `❌ <span style="color:var(--red)">${msg}</span>`;
+}
+
+// ── IMPORT HISTORY ──
+async function loadImportHistory() {
+    try {
+        const r = await apiFetch('/api/stock/imports');
+        if (r.ok) {
+            const imports = await r.json();
+            renderImportHistory(imports);
+        }
+    } catch {
+        document.getElementById('importHistoryWrap').innerHTML = '<div class="empty-history">Impossible de charger l\'historique.</div>';
+    }
+}
+
+function renderImportHistory(imports) {
+    const wrap = document.getElementById('importHistoryWrap');
+    if (!imports || imports.length === 0) {
+        wrap.innerHTML = '<div class="empty-history">Aucun import pour le moment.<br>Importez votre premier fichier de stock ci-dessus.</div>';
+        return;
+    }
+    const statusLabel = { success: '✅ Succès', partial: '⚠️ Partiel', error: '❌ Erreur' };
+    const swLabel = { winpharma: 'Winpharma', lgpi: 'LGPI', leo: 'LEO', autre: 'Autre' };
+    const rows = imports.map(imp => `
+        <tr>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${imp.file_name}">${imp.file_name}</td>
+            <td>${swLabel[imp.software] || imp.software}</td>
+            <td>${imp.product_count}</td>
+            <td>${imp.error_count > 0 ? `<span style="color:var(--red)">${imp.error_count}</span>` : '0'}</td>
+            <td><span class="status-pill ${imp.status}">${statusLabel[imp.status] || imp.status}</span></td>
+            <td style="white-space:nowrap">${formatDate(imp.imported_at)}</td>
+        </tr>`).join('');
+    wrap.innerHTML = `<div style="overflow-x:auto"><table class="history-table">
+        <thead><tr><th>Fichier</th><th>LGO</th><th>Produits</th><th>Erreurs</th><th>Statut</th><th>Date</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+// ── CSV TEMPLATE DOWNLOAD ──
+function downloadTemplate(software) {
+    const headers = ['Code CIP13', 'Libellé produit', 'Quantité stock', 'Prix HT (optionnel)', 'Fournisseur (optionnel)'];
+    const examples = {
+        winpharma: [
+            ['3400936425419', 'DOLIPRANE 1000MG CPR B/8', '24', '2.45', 'SANOFI'],
+            ['3400938493372', 'IBUPROFENE 400MG CPR B/30', '12', '3.10', 'BIOGARAN']
+        ],
+        lgpi: [
+            ['3400920084460', 'DAFALGAN 500MG CPR B/16', '36', '2.20', 'UPSA'],
+            ['3400927471130', 'KARDEGIC 75MG SASC B/30', '18', '1.85', 'SANOFI']
+        ],
+        leo: [
+            ['3400921609458', 'SMECTA 3G ORANGE B/30', '20', '5.60', 'IPSEN'],
+            ['3400935424066', 'MAALOX SUSP BUV FL/250ML', '8', '4.15', 'SANOFI']
+        ],
+        autre: [
+            ['3400936425419', 'Exemple Produit 1', '10', '5.00', 'Fournisseur A'],
+            ['3400938493372', 'Exemple Produit 2', '25', '3.50', 'Fournisseur B']
+        ]
+    };
+    const rows = [headers, ...(examples[software] || examples.autre)];
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `template-stock-${software}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ── UTILS ──
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' o';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+}
+
+function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── AGENT PN13 ──
+
+let agentData = null;
+
+async function loadAgentData() {
+    await Promise.all([loadAgentKey(), loadAgentStatus()]);
+}
+
+async function loadAgentKey() {
+    try {
+        const r = await apiFetch('/api/agent/key');
+        if (r.ok) {
+            agentData = await r.json();
+            document.getElementById('keyLoadingNote').style.display = 'none';
+            document.getElementById('keyBoxWrap').style.display = 'block';
+            document.getElementById('keyValue').textContent = agentData.pharmacy_key;
+        }
+    } catch {}
+}
+
+async function loadAgentStatus() {
+    try {
+        const r = await apiFetch('/api/agent/status');
+        if (!r.ok) return;
+        const data = await r.json();
+
+        const dot = document.getElementById('agentDot');
+        const txt = document.getElementById('agentStatusText');
+        const metaRow = document.getElementById('agentMetaRow');
+
+        if (!data.agent) {
+            dot.className = 'agent-status-dot';
+            txt.textContent = 'Agent non installé — suivez les étapes ci-dessous';
+            return;
+        }
+
+        if (data.connected) {
+            dot.className = 'agent-status-dot connected';
+            txt.textContent = '✅ Connecté — l\'agent est actif';
+        } else if (data.agent.last_seen_at) {
+            dot.className = 'agent-status-dot pending';
+            txt.textContent = '⚠️ Déconnecté — dernière activité : ' + formatDate(data.agent.last_seen_at);
+        } else {
+            dot.className = 'agent-status-dot';
+            txt.textContent = '⏳ En attente — l\'agent n\'a pas encore contacté le serveur';
+        }
+
+        if (data.agent.last_seen_at) {
+            metaRow.style.display = 'block';
+            document.getElementById('agentLastSeen').textContent = 'Vu : ' + formatDate(data.agent.last_seen_at);
+            document.getElementById('agentEventsTotal').textContent = (data.agent.events_total || 0).toLocaleString('fr-FR') + ' événements reçus';
+        }
+
+        // Recent events
+        if (data.recent_events && data.recent_events.length > 0) {
+            document.getElementById('recentEventsCard').style.display = 'block';
+            renderRecentEvents(data.recent_events);
+        }
+    } catch {}
+}
+
+function renderRecentEvents(events) {
+    const typeLabel = { vente: 'Vente', reception: 'Réception', retour: 'Retour', inventaire: 'Inventaire', ajustement: 'Ajustement' };
+    const rows = events.map(ev => `
+        <tr>
+            <td><span class="event-type-pill ${ev.event_type}">${typeLabel[ev.event_type] || ev.event_type}</span></td>
+            <td style="font-family:monospace;font-size:0.78rem">${ev.cip_code || '—'}</td>
+            <td>${ev.label ? ev.label.substring(0, 40) : '—'}</td>
+            <td style="text-align:right;font-weight:600">${ev.quantity !== null ? (ev.quantity > 0 ? '+' + ev.quantity : ev.quantity) : '—'}</td>
+            <td style="white-space:nowrap;color:var(--slate-400)">${formatDate(ev.occurred_at)}</td>
+        </tr>`).join('');
+    document.getElementById('recentEventsWrap').innerHTML = `
+        <div style="overflow-x:auto">
+        <table class="events-table">
+            <thead><tr><th>Type</th><th>Code CIP</th><th>Libellé</th><th style="text-align:right">Qté</th><th>Horodatage</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table></div>`;
+}
+
+async function copyKey() {
+    const key = document.getElementById('keyValue').textContent;
+    if (!key || key === '—') return;
+    try {
+        await navigator.clipboard.writeText(key);
+        const btn = document.getElementById('keyCopyBtn');
+        btn.textContent = '✅ Copié !';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = '📋 Copier';
+            btn.classList.remove('copied');
+        }, 2000);
+    } catch {}
+}
+
+// ══════════════════════════════════════════════════
+//  PDF CATALOGUE IMPORT
+// ══════════════════════════════════════════════════
+
+let pdfParsedProducts = [];  // full parsed list held in memory until confirm
+let pdfFileName = '';
+
+function onPDFDragOver(e) { e.preventDefault(); document.getElementById('pdfUploadZone').classList.add('drag-over'); }
+function onPDFDragLeave() { document.getElementById('pdfUploadZone').classList.remove('drag-over'); }
+function onPDFDrop(e) {
+    e.preventDefault();
+    document.getElementById('pdfUploadZone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processPDFFile(file);
+}
+function onPDFFileSelected(e) {
+    const file = e.target.files[0];
+    if (file) processPDFFile(file);
+}
+
+function processPDFFile(file) {
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+        showPDFError('Seuls les fichiers PDF sont acceptés.');
+        return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+        showPDFError('Le fichier est trop volumineux (max 50 Mo).');
+        return;
+    }
+    pdfFileName = file.name;
+    pdfParsedProducts = [];
+
+    // Reset UI
+    document.getElementById('pdfPreviewWrap').style.display = 'none';
+    document.getElementById('pdfImportResult').style.display = 'none';
+    document.getElementById('pdfUploadPrompt').style.display = 'none';
+    document.getElementById('pdfUploadStatus').style.display = 'block';
+    document.getElementById('pdfUploadStatus').innerHTML = `📄 <strong>${file.name}</strong> (${formatBytes(file.size)})`;
+    document.getElementById('pdfUploadZone').classList.add('has-file');
+
+    // Show progress
+    document.getElementById('pdfProgressWrap').style.display = 'block';
+    document.getElementById('pdfProgressLabel').textContent = 'Envoi du PDF au serveur…';
+    animatePDFProgress(0, 30, 800);
+
+    // Upload to server for parsing
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    // Use fetch directly (not apiFetch) to avoid overriding Content-Type,
+    // which would break the multipart/form-data boundary
+    fetch('/api/stock/parse-pdf', {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': 'Bearer ' + token }
+    }).then(async r => {
+        animatePDFProgress(30, 90, 600);
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({ error: 'Erreur inconnue' }));
+            throw new Error(err.error || `Erreur ${r.status}`);
+        }
+        return r.json();
+    }).then(data => {
+        animatePDFProgress(90, 100, 200);
+        setTimeout(() => {
+            document.getElementById('pdfProgressWrap').style.display = 'none';
+            pdfParsedProducts = data.products || [];
+            renderPDFPreview(data);
+        }, 250);
+    }).catch(err => {
+        document.getElementById('pdfProgressWrap').style.display = 'none';
+        showPDFError(err.message || 'Erreur lors du parsing du PDF.');
+    });
+}
+
+function animatePDFProgress(from, to, duration) {
+    const bar = document.getElementById('pdfProgressBar');
+    const pct = document.getElementById('pdfProgressPct');
+    const steps = 20;
+    const interval = duration / steps;
+    let current = from;
+    const step = (to - from) / steps;
+    const timer = setInterval(() => {
+        current = Math.min(current + step, to);
+        bar.style.width = current + '%';
+        pct.textContent = Math.round(current) + '%';
+        if (current >= to) clearInterval(timer);
+    }, interval);
+}
+
+function renderPDFPreview(data) {
+    const preview = data.preview || [];
+    const total = data.total || 0;
+    const pages = data.pages || '?';
+
+    document.getElementById('pdfPreviewSub').textContent =
+        `${total.toLocaleString('fr')} produits détectés sur ${pages} pages · Aperçu des 20 premiers`;
+
+    const tbody = document.getElementById('pdfPreviewBody');
+    tbody.innerHTML = preview.map((p, i) => `
+        <tr>
+            <td style="color:var(--slate-400); font-size:0.78rem;">${i + 1}</td>
+            <td>${escHtml(p.name)}</td>
+            <td><code style="font-size:0.82rem; background:var(--slate-100); padding:0.15rem 0.35rem; border-radius:4px;">${escHtml(p.barcode)}</code></td>
+        </tr>`).join('');
+
+    document.getElementById('pdfPreviewWrap').style.display = 'block';
+    document.getElementById('pdfUploadStatus').innerHTML =
+        `✅ <strong>${pdfFileName}</strong> — <strong>${total.toLocaleString('fr')}</strong> produits détectés`;
+}
+
+async function confirmPDFImport() {
+    if (!pdfParsedProducts.length) return;
+    const btn = document.getElementById('pdfConfirmBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Import en cours…';
+
+    document.getElementById('pdfProgressWrap').style.display = 'block';
+    document.getElementById('pdfProgressLabel').textContent = `Import de ${pdfParsedProducts.length.toLocaleString('fr')} produits…`;
+    animatePDFProgress(0, 80, 1200);
+
+    try {
+        const r = await apiFetch('/api/stock/import-pdf-data', {
+            method: 'POST',
+            body: JSON.stringify({ products: pdfParsedProducts, file_name: pdfFileName })
+        });
+        animatePDFProgress(80, 100, 300);
+        const result = await r.json();
+        setTimeout(() => {
+            document.getElementById('pdfProgressWrap').style.display = 'none';
+            document.getElementById('pdfPreviewWrap').style.display = 'none';
+            if (!r.ok) {
+                showPDFError(result.error || 'Erreur lors de l\'import.');
+                btn.disabled = false; btn.textContent = '✅ Confirmer l\'import';
+                return;
+            }
+            const totalImported = (result.added || 0) + (result.updated || 0);
+            if (totalImported === 0 && result.errors > 0) {
+                showPDFError(`${result.errors.toLocaleString('fr')} erreurs — aucun produit importé. Contactez le support si le problème persiste.`);
+            } else {
+                showPDFSuccess(result);
+            }
+            loadImportHistory();
+            pdfParsedProducts = [];
+        }, 350);
+    } catch (err) {
+        document.getElementById('pdfProgressWrap').style.display = 'none';
+        showPDFError(err.message || 'Erreur réseau.');
+        btn.disabled = false; btn.textContent = '✅ Confirmer l\'import';
+    }
+}
+
+function showPDFSuccess(result) {
+    const wrap = document.getElementById('pdfImportResult');
+    const total = (result.added || 0) + (result.updated || 0);
+    wrap.style.display = 'block';
+    wrap.innerHTML = `
+        <div style="background:var(--green-light); border:1px solid #6EE7B7; border-radius:10px; padding:1rem 1.25rem; display:flex; align-items:flex-start; gap:0.75rem;">
+            <span style="font-size:1.5rem; flex-shrink:0;">✅</span>
+            <div>
+                <div style="font-weight:700; color:var(--green-dark); font-size:0.95rem; margin-bottom:0.25rem;">Import réussi !</div>
+                <div style="font-size:0.85rem; color:#065F46;">
+                    <strong>${(result.added || 0).toLocaleString('fr')}</strong> produits ajoutés ·
+                    <strong>${(result.updated || 0).toLocaleString('fr')}</strong> mis à jour
+                    ${result.errors ? ` · <span style="color:var(--red);">${result.errors.toLocaleString('fr')} erreur${result.errors > 1 ? 's' : ''}</span>` : ''}
+                </div>
+                <div style="font-size:0.78rem; color:#6EE7B7; margin-top:0.35rem;">Ces produits sont maintenant disponibles dans le wizard planogramme (étape Produits).</div>
+            </div>
+        </div>`;
+    // Reset upload zone
+    document.getElementById('pdfUploadZone').classList.remove('has-file');
+    document.getElementById('pdfUploadPrompt').style.display = 'block';
+    document.getElementById('pdfUploadStatus').style.display = 'none';
+    document.getElementById('pdfFileInput').value = '';
+}
+
+function showPDFError(msg) {
+    const wrap = document.getElementById('pdfImportResult');
+    wrap.style.display = 'block';
+    wrap.innerHTML = `
+        <div style="background:var(--red-light); border:1px solid #FCA5A5; border-radius:10px; padding:0.85rem 1rem; font-size:0.85rem; color:#991B1B;">
+            <strong>❌ Erreur :</strong> ${escHtml(msg)}
+        </div>`;
+}
+
+function resetPDFImport() {
+    pdfParsedProducts = [];
+    pdfFileName = '';
+    document.getElementById('pdfPreviewWrap').style.display = 'none';
+    document.getElementById('pdfImportResult').style.display = 'none';
+    document.getElementById('pdfProgressWrap').style.display = 'none';
+    document.getElementById('pdfUploadZone').classList.remove('has-file');
+    document.getElementById('pdfUploadPrompt').style.display = 'block';
+    document.getElementById('pdfUploadStatus').style.display = 'none';
+    document.getElementById('pdfFileInput').value = '';
+    document.getElementById('pdfConfirmBtn').disabled = false;
+    document.getElementById('pdfConfirmBtn').textContent = '✅ Confirmer l\'import';
+}
+
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auto-refresh agent status every 30s when on agent tab
+setInterval(() => {
+    const tab = document.getElementById('tabAgent');
+    if (tab && tab.style.display !== 'none') {
+        loadAgentStatus();
+    }
+}, 30_000);
+
+// ── INIT ──
+window.addEventListener('load', async () => {
+    await init();
+    // If config exists, restore guide state
+    if (currentConfig && currentConfig.software) {
+        restoreGuideFromConfig();
+    }
+});
+</script>
+</body>
+</html>

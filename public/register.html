@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfRx — Créer votre compte</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --teal: #0D9488; --teal-dark: #0F766E; --teal-light: #CCFBF1; --teal-50: #F0FDFA; --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B; --slate-400: #94A3B8; --slate-300: #CBD5E1; --slate-200: #E2E8F0; --slate-100: #F1F5F9; --red: #EF4444; --red-light: #FEE2E2; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--slate-100); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        h1,h2,h3 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+        .container { width: 100%; max-width: 480px; }
+        .logo-bar { text-align: center; margin-bottom: 2rem; }
+        .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.5rem; color: var(--slate-900); text-decoration: none; }
+        .logo span { background: var(--teal); color: white; font-size: 0.55rem; padding: 0.15rem 0.4rem; border-radius: 3px; vertical-align: middle; margin-left: 4px; font-weight: 600; }
+        .card { background: white; border-radius: 16px; border: 1px solid var(--slate-200); padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .card-title { font-size: 1.4rem; margin-bottom: 0.4rem; }
+        .card-sub { color: var(--slate-500); font-size: 0.9rem; margin-bottom: 1.75rem; line-height: 1.5; }
+        .trial-badge { background: var(--teal-50); border: 1px solid var(--teal-light); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
+        .trial-badge-icon { font-size: 1.2rem; }
+        .trial-badge-text { font-size: 0.85rem; color: var(--teal-dark); font-weight: 500; }
+        .form-group { margin-bottom: 1rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--slate-700); margin-bottom: 0.35rem; }
+        .form-input { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--slate-300); border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; color: var(--slate-900); transition: border-color 0.15s; }
+        .form-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+        .form-input::placeholder { color: var(--slate-400); }
+        .btn { width: 100%; padding: 0.85rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-primary { background: var(--teal); color: white; margin-top: 0.5rem; }
+        .btn-primary:hover:not(:disabled) { background: var(--teal-dark); }
+        .btn-primary:disabled { background: var(--slate-300); cursor: not-allowed; }
+        .error-msg { background: var(--red-light); border: 1px solid #fca5a5; color: #b91c1c; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+        .footer-link { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: var(--slate-500); }
+        .footer-link a { color: var(--teal); text-decoration: none; font-weight: 500; }
+        .divider { text-align: center; margin: 1.5rem 0 1rem; color: var(--slate-400); font-size: 0.8rem; }
+        .price-note { text-align: center; font-size: 0.78rem; color: var(--slate-400); margin-top: 1rem; line-height: 1.5; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.5); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo-bar">
+        <a href="/" class="logo">ShelfRx <span>RX</span></a>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">Créer votre compte</h2>
+        <p class="card-sub">Planogrammes intelligents pour votre pharmacie</p>
+
+        <div class="trial-badge">
+            <span class="trial-badge-icon">🎁</span>
+            <span class="trial-badge-text">Essai gratuit 7 jours — sans carte bancaire. Puis 79 €/mois.</span>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <form id="registerForm">
+            <div class="form-row">
+                <div>
+                    <label class="form-label">Prénom et nom *</label>
+                    <input class="form-input" type="text" id="name" placeholder="Marie Dupont" required autocomplete="name">
+                </div>
+                <div>
+                    <label class="form-label">Téléphone</label>
+                    <input class="form-input" type="tel" id="phone" placeholder="06 12 34 56 78" autocomplete="tel">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nom de la pharmacie *</label>
+                <input class="form-input" type="text" id="pharmacyName" placeholder="Pharmacie du Centre" required autocomplete="organization">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email *</label>
+                <input class="form-input" type="email" id="email" placeholder="vous@pharmacie.fr" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Mot de passe *</label>
+                <input class="form-input" type="password" id="password" placeholder="8 caractères minimum" required autocomplete="new-password" minlength="8">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                Commencer l'essai gratuit →
+            </button>
+        </form>
+
+        <p class="price-note">Essai gratuit 7 jours — puis 79 €/mois TTC. Sans engagement. Annulez à tout moment.</p>
+    </div>
+
+    <div class="footer-link">
+        Déjà un compte ? <a href="/login">Se connecter</a>
+    </div>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const err = document.getElementById('errorMsg');
+    err.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    const body = {
+        name: document.getElementById('name').value.trim(),
+        pharmacy_name: document.getElementById('pharmacyName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        phone: document.getElementById('phone').value.trim() || undefined
+    };
+
+    try {
+        const resp = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            err.textContent = data.error || 'Erreur lors de l\'inscription';
+            err.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Commencer l\'essai gratuit →';
+            return;
+        }
+        localStorage.setItem('shelfrx_token', data.token);
+        localStorage.setItem('shelfrx_user', JSON.stringify(data.user));
+        window.location.href = '/app';
+    } catch (ex) {
+        err.textContent = 'Erreur de connexion. Réessayez.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Commencer l\'essai gratuit →';
+    }
+});
+</script>
+</body>
+</html>

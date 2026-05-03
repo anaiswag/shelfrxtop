@@ -1,0 +1,3049 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfRx - Constructeur de planogrammes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --teal-50: #F0FDFA;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-300: #CBD5E1;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --white: #FFFFFF;
+        }
+        body { font-family: 'DM Sans', sans-serif; color: var(--slate-700); background: var(--slate-100); min-height: 100vh; }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+        .topbar { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .user-pill { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--slate-500); cursor: pointer; position: relative; }
+        .user-pill-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-dropdown { position: absolute; top: calc(100% + 0.5rem); right: 0; background: white; border: 1px solid var(--slate-200); border-radius: 10px; padding: 0.5rem; min-width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: none; z-index: 100; }
+        .user-dropdown.open { display: block; }
+        .user-dropdown-item { padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; color: var(--slate-700); transition: background 0.1s; }
+        .user-dropdown-item:hover { background: var(--slate-100); }
+        .topbar-logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--slate-900); text-decoration: none; display: flex; align-items: center; gap: 0.4rem; }
+        .topbar-pill { background: var(--teal); color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; }
+        .topbar-project { font-size: 0.85rem; color: var(--slate-500); }
+        .stepper { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0; overflow-x: auto; }
+        .step-indicator { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.8rem; font-weight: 500; color: var(--slate-400); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .step-indicator.active { background: var(--teal-50); color: var(--teal-dark); font-weight: 600; }
+        .step-indicator.completed { color: var(--teal); }
+        .step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; background: var(--slate-200); color: var(--slate-500); flex-shrink: 0; }
+        .step-indicator.active .step-num { background: var(--teal); color: white; }
+        .step-indicator.completed .step-num { background: var(--teal-light); color: var(--teal-dark); }
+        .step-connector { width: 24px; height: 2px; background: var(--slate-200); flex-shrink: 0; }
+        .step-connector.completed { background: var(--teal); }
+        .content { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+        .card { background: var(--white); border-radius: 16px; border: 1px solid var(--slate-200); padding: 2rem; margin-bottom: 1.5rem; }
+        .card-title { font-size: 1.3rem; margin-bottom: 0.5rem; }
+        .card-subtitle { color: var(--slate-500); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--slate-700); margin-bottom: 0.4rem; }
+        .form-input { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--slate-300); border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; color: var(--slate-900); transition: border-color 0.15s; background: var(--white); }
+        .form-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
+        .form-input::placeholder { color: var(--slate-400); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+        select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748B' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.25rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-primary { background: var(--teal); color: white; }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-primary:disabled { background: var(--slate-300); cursor: not-allowed; }
+        .btn-secondary { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-300); }
+        .btn-secondary:hover { background: var(--slate-200); }
+        .btn-danger { background: transparent; color: var(--red); padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+        .btn-danger:hover { background: var(--red-light); }
+        .btn-ghost { background: transparent; color: var(--teal); padding: 0.4rem 0.75rem; }
+        .btn-ghost:hover { background: var(--teal-50); }
+        .btn-lg { padding: 0.85rem 2rem; font-size: 0.95rem; }
+        .btn-block { width: 100%; }
+        .btn-row { display: flex; gap: 0.75rem; justify-content: space-between; margin-top: 1.5rem; }
+        .photo-upload { border: 2px dashed var(--slate-300); border-radius: 12px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+        .photo-upload:hover { border-color: var(--teal); background: var(--teal-50); }
+        .photo-upload.has-photo { padding: 0; border-style: solid; border-color: var(--teal); }
+        .photo-upload img { width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; }
+        .photo-upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        .photo-upload-text { font-weight: 600; color: var(--slate-700); margin-bottom: 0.25rem; }
+        .photo-upload-hint { font-size: 0.8rem; color: var(--slate-400); }
+        .photo-upload input[type="file"] { display: none; }
+        .photo-replace-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer; }
+        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .category-card { padding: 1.25rem 1rem; border: 2px solid var(--slate-200); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.15s; }
+        .category-card:hover { border-color: var(--teal); background: var(--teal-50); }
+        .category-card.selected { border-color: var(--teal); background: var(--teal-50); }
+        .category-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .category-label { font-weight: 600; font-size: 0.8rem; color: var(--slate-700); }
+        .product-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .product-item { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--slate-200); border-radius: 10px; background: var(--slate-100); }
+        .product-item-info h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+        .product-item-meta { font-size: 0.75rem; color: var(--slate-500); }
+        .product-item-thumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; background: var(--slate-200); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--slate-300); cursor: pointer; position: relative; }
+        .product-item-thumb:hover { border-color: var(--teal); }
+        .product-item-thumb img { width: 100%; height: 100%; object-fit: contain; }
+        .product-item-thumb-placeholder { font-size: 1.2rem; color: var(--slate-400); }
+        .product-item-thumb-loading { width: 20px; height: 20px; border: 2px solid var(--slate-300); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.6s linear infinite; }
+        .product-item-thumb-overlay { position: absolute; inset: 0; background: rgba(13,148,136,0.75); display: none; align-items: center; justify-content: center; color: white; font-size: 1rem; border-radius: 6px; }
+        .product-item-thumb:hover .product-item-thumb-overlay { display: flex; }
+        .product-item-actions { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }
+        .image-source-badge { display: inline-block; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--teal-light); color: var(--teal-dark); margin-top: 0.2rem; }
+        .image-source-badge.manual { background: #EDE9FE; color: #5B21B6; }
+        .priority-badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .priority-badge.high { background: var(--teal-light); color: var(--teal-dark); }
+        .priority-badge.medium { background: var(--amber-light); color: #92400E; }
+        .priority-badge.low { background: var(--slate-200); color: var(--slate-500); }
+        .empty-state { text-align: center; padding: 3rem; color: var(--slate-400); }
+        .empty-state-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .add-product-form { background: var(--teal-50); border: 1px solid rgba(13,148,136,0.2); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+        .add-product-form h4 { font-size: 0.95rem; margin-bottom: 1rem; color: var(--teal-dark); }
+        .planogram-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+        .planogram-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .planogram-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: var(--white); border: 1px solid var(--slate-200); border-radius: 10px; padding: 1rem; text-align: center; }
+        .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--teal); }
+        .stat-label { font-size: 0.75rem; color: var(--slate-500); margin-top: 0.2rem; }
+        .planogram-visual { background: var(--white); border: 1px solid var(--slate-200); border-radius: 16px; padding: 1.5rem; overflow-x: auto; }
+        .planogram-visual svg { display: block; margin: 0 auto; }
+        .planogram-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .planogram-layout.no-photo { grid-template-columns: 1fr; }
+        .photo-reference { background: var(--white); border: 1px solid var(--slate-200); border-radius: 16px; padding: 1rem; }
+        .photo-reference img { width: 100%; border-radius: 10px; object-fit: contain; max-height: 500px; }
+        .photo-reference h4 { font-size: 0.85rem; color: var(--slate-500); margin-bottom: 0.75rem; }
+        .not-placed-warning { background: var(--amber-light); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1rem; margin-top: 1rem; }
+        .not-placed-warning h4 { font-size: 0.85rem; color: #92400E; margin-bottom: 0.5rem; }
+        .not-placed-warning li { font-size: 0.8rem; color: #92400E; margin-left: 1.25rem; line-height: 1.6; }
+        .loading { display: flex; flex-direction: column; align-items: center; padding: 3rem; }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--slate-200); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .wizard-step { display: none; }
+        .wizard-step.active { display: block; }
+        @media (max-width: 768px) {
+            .content { padding: 1rem 0.75rem; }
+            .card { padding: 1.25rem; margin-bottom: 1rem; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-row-3 { grid-template-columns: 1fr 1fr; }
+            .category-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .planogram-stats { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .planogram-layout { grid-template-columns: 1fr; }
+            .stepper { justify-content: flex-start; padding: 0.5rem 0.75rem; overflow-x: auto; gap: 0.25rem; }
+            .step-label { display: none; }
+            .step-indicator { padding: 0.3rem 0.5rem; }
+            .step-indicator.active .step-label { display: inline; }
+            .step-indicator .step-num { width: 20px; height: 20px; font-size: 0.6rem; }
+            .step-connector { width: 16px; }
+            .btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
+            .btn-lg { padding: 0.7rem 1.5rem; font-size: 0.85rem; }
+            .btn-row { flex-direction: column; gap: 0.5rem; }
+            .photo-upload { padding: 1.5rem 1rem; }
+            .photo-upload-icon { font-size: 2rem; }
+            .photo-upload-text { font-size: 0.9rem; }
+            .photo-upload-hint { font-size: 0.75rem; }
+            .category-card { padding: 1rem 0.75rem; }
+            .category-icon { font-size: 1.2rem; }
+            .category-label { font-size: 0.75rem; }
+            .import-strip { flex-direction: column; gap: 0.5rem; padding: 0.75rem; }
+            .import-strip-text { min-width: auto; }
+            .btn-import, .btn-template { padding: 0.4rem 0.8rem; font-size: 0.75rem; width: 100%; }
+            .form-label { font-size: 0.75rem; }
+            .form-input { font-size: 0.85rem; padding: 0.5rem 0.7rem; }
+            .topbar { padding: 0.6rem 0.75rem; }
+            .topbar-logo { font-size: 1rem; }
+            .topbar-pill { font-size: 0.5rem; padding: 0.1rem 0.3rem; }
+            .planogram-visual { padding: 1rem; }
+            .planogram-visual svg { max-width: 100%; height: auto; }
+            .preview-table-wrap { max-height: 70vh; font-size: 0.75rem; }
+            .preview-table th { padding: 0.3rem 0.3rem; font-size: 0.7rem; }
+            .preview-table td { padding: 0.3rem 0.3rem; }
+            .preview-table .td-input { padding: 0.25rem 0.3rem; font-size: 0.75rem; }
+            .preview-table .td-select { padding: 0.25rem 0.3rem; font-size: 0.75rem; }
+            .product-list { gap: 0.5rem; }
+            .product-item { padding: 0.5rem 0.75rem; grid-template-columns: 40px 1fr auto; gap: 0.5rem; }
+            .product-item-thumb { width: 40px; height: 40px; }
+            .product-item-info h4 { font-size: 0.8rem; }
+            .product-item-meta { font-size: 0.7rem; }
+            .product-item-actions { flex-direction: row; }
+        }
+        @media (max-width: 480px) {
+            .category-grid { grid-template-columns: 1fr 1fr; }
+            .form-row-3 { grid-template-columns: 1fr; }
+            .category-card { padding: 0.75rem 0.5rem; }
+            .category-icon { font-size: 1rem; margin-bottom: 0.3rem; }
+            .category-label { font-size: 0.7rem; }
+            .planogram-stats { grid-template-columns: 1fr; }
+            .stat-value { font-size: 1.4rem; }
+            .stat-label { font-size: 0.7rem; }
+            .photo-upload { padding: 1rem 0.75rem; }
+            .card { padding: 1rem; }
+            .card-title { font-size: 1.1rem; }
+            .card-subtitle { font-size: 0.8rem; margin-bottom: 1rem; }
+            .topbar { padding: 0.5rem 0.5rem; }
+            .topbar-logo { font-size: 0.9rem; }
+            .content { padding: 0.75rem 0.5rem; }
+            .stepper { padding: 0.4rem 0.5rem; }
+            .step-connector { width: 12px; }
+            .import-strip { padding: 0.5rem; }
+            .btn { min-height: 44px; padding: 0.6rem 0.8rem; }
+            .form-input { min-height: 44px; font-size: 16px; }
+            .form-label { margin-bottom: 0.3rem; }
+            .form-group { margin-bottom: 1rem; }
+            .preview-modal { width: 95%; max-width: 100%; }
+        }
+        /* ---- AI ESTIMATE BANNER ---- */
+        .ai-banner { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 500; margin-bottom: 1.25rem; }
+        .ai-banner-loading { background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); }
+        .ai-banner-success { background: var(--teal-light); color: var(--teal-dark); border: 1px solid rgba(13,148,136,0.25); }
+        .ai-banner .spinner { width: 16px; height: 16px; border-width: 2px; flex-shrink: 0; }
+        @media print {
+            .topbar, .stepper, .btn-row, .no-print { display: none !important; }
+            .planogram-container { padding: 0; max-width: 100%; }
+            .planogram-visual { border: none; padding: 0; }
+            body { background: white; }
+        }
+        /* ---- AI PRODUCT DETECTION ---- */
+        .ai-detect-section { margin-bottom: 1.25rem; }
+        .ai-detect-banner { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 500; }
+        .ai-detect-banner-loading { background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); }
+        .ai-detect-banner-success { background: var(--teal-light); color: var(--teal-dark); border: 1px solid rgba(13,148,136,0.25); }
+        .ai-detect-banner .spinner { width: 16px; height: 16px; border-width: 2px; flex-shrink: 0; }
+        .ai-detected-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+        .ai-detected-header h4 { font-size: 0.95rem; color: var(--teal-dark); display: flex; align-items: center; gap: 0.4rem; }
+        .ai-detected-actions { display: flex; gap: 0.5rem; }
+        .ai-detected-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .ai-product-card { display: grid; grid-template-columns: 1fr auto; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem; background: white; border: 1.5px solid rgba(13,148,136,0.2); border-radius: 10px; }
+        .ai-product-card.confirmed { opacity: 0.5; pointer-events: none; }
+        .ai-product-name { font-size: 0.9rem; font-weight: 600; color: var(--slate-900); margin-bottom: 0.15rem; }
+        .ai-product-meta { font-size: 0.75rem; color: var(--slate-500); }
+        .ai-product-actions { display: flex; gap: 0.4rem; align-items: center; }
+        .badge-ia { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: linear-gradient(135deg, #0D9488, #3B82F6); color: white; }
+        /* Dimension source badges */
+        .badge-dims { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .badge-dims-community { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .badge-dims-calibrated { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+        .badge-dims-estimate   { background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); }
+        /* Editable dimension row inside AI product card */
+        .ai-dims-row { margin-top: 0.45rem; }
+        .ai-dims-label { font-size: 0.68rem; color: var(--slate-400); display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem; }
+        .ai-dims-inputs { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+        .ai-dim-input { width: 52px; padding: 0.22rem 0.35rem; border: 1.5px solid var(--slate-200); border-radius: 5px; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; color: var(--slate-900); text-align: center; background: #F8FAFC; transition: border-color 0.15s; }
+        .ai-dim-input:focus { outline: none; border-color: var(--teal); background: white; }
+        .ai-dims-sep { font-size: 0.75rem; color: var(--slate-400); }
+        .ai-dims-unit { font-size: 0.7rem; color: var(--slate-400); margin-left: 0.1rem; }
+        .btn-confirm-ai { background: var(--teal); color: white; border: none; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .btn-confirm-ai:hover { background: var(--teal-dark); }
+        .btn-dismiss-ai { background: transparent; color: var(--slate-400); border: none; padding: 0.35rem 0.5rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .btn-dismiss-ai:hover { background: var(--slate-100); color: var(--slate-600); }
+        .btn-confirm-all-ai { background: var(--teal); color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .btn-confirm-all-ai:hover { background: var(--teal-dark); }
+        .btn-dismiss-all-ai { background: transparent; color: var(--slate-400); border: 1px solid var(--slate-200); padding: 0.35rem 0.7rem; border-radius: 7px; font-size: 0.78rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .btn-dismiss-all-ai:hover { background: var(--slate-100); color: var(--slate-600); }
+        .ai-divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; color: var(--slate-400); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .ai-divider::before, .ai-divider::after { content: ''; flex: 1; height: 1px; background: var(--slate-200); }
+        /* ---- IMPORT FEATURE ---- */
+        .import-divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; color: var(--slate-400); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .import-divider::before, .import-divider::after { content: ''; flex: 1; height: 1px; background: var(--slate-200); }
+        /* ---- BARCODE SCANNER ---- */
+        .scan-bar { display: flex; align-items: center; gap: 0.75rem; margin: 1rem 0 0; }
+        .scan-bar::before, .scan-bar::after { content: ''; flex: 1; height: 1px; background: var(--slate-200); }
+        .btn-scan { display: inline-flex; align-items: center; gap: 0.45rem; background: var(--teal); color: #fff; border: none; border-radius: 9px; padding: 0.55rem 1.1rem; font-size: 0.88rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; transition: background 0.15s; box-shadow: 0 1px 3px rgba(13,148,136,0.25); }
+        .btn-scan:hover { background: var(--teal-dark); }
+        /* Scanner modal */
+        #scannerModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
+        #scannerModal.open { display: flex; }
+        .scanner-box { background: #fff; border-radius: 18px; padding: 22px 20px 20px; width: min(92vw, 400px); position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+        .scanner-close { position: absolute; top: 14px; right: 14px; background: var(--slate-100); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--slate-600); }
+        .scanner-title { font-size: 1rem; font-weight: 700; color: var(--slate-900); margin: 0 0 14px; font-family: 'Space Grotesk', sans-serif; }
+        #qr-reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; min-height: 200px; }
+        #qr-reader video { width: 100% !important; border-radius: 10px; }
+        #qr-reader img { display: none !important; }
+        .scanner-status { text-align: center; margin-top: 10px; color: var(--slate-400); font-size: 0.82rem; min-height: 20px; }
+        .scanner-result { margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border-radius: 10px; border: 1px solid #86efac; font-size: 0.85rem; }
+        .scanner-result-notfound { background: #fffbeb; border-color: #fcd34d; }
+        .scanner-result-btn { display: block; width: 100%; margin-top: 10px; padding: 10px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .scanner-result-btn-primary { background: var(--teal); color: #fff; }
+        .scanner-result-btn-secondary { background: var(--amber); color: #fff; }
+        .import-strip { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 1rem 1.25rem; background: #F8FAFC; border: 1px dashed var(--slate-300); border-radius: 10px; margin-bottom: 1rem; }
+        .import-strip-text { flex: 1; min-width: 150px; }
+        .import-strip-text strong { font-size: 0.9rem; color: var(--slate-900); display: block; }
+        .import-strip-text span { font-size: 0.78rem; color: var(--slate-500); }
+        .btn-import { background: white; color: var(--teal-dark); border: 1.5px solid var(--teal); font-size: 0.82rem; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.15s; }
+        .btn-import:hover { background: var(--teal-50); }
+        .btn-template { background: transparent; color: var(--slate-500); border: 1px solid var(--slate-300); font-size: 0.78rem; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+        .btn-template:hover { background: var(--slate-100); color: var(--slate-700); }
+        /* Preview Modal */
+        .preview-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem; overflow-y: auto; }
+        .preview-modal-overlay.open { display: flex; }
+        .preview-modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 760px; margin: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .preview-modal-header { padding: 1.5rem 1.5rem 0; }
+        .preview-modal-header h3 { font-size: 1.15rem; margin-bottom: 0.25rem; }
+        .preview-modal-header p { font-size: 0.82rem; color: var(--slate-500); margin-bottom: 1rem; }
+        .preview-table-wrap { padding: 0 1.5rem; overflow-x: auto; max-height: 55vh; overflow-y: auto; }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .preview-table th { position: sticky; top: 0; background: var(--slate-100); color: var(--slate-600); font-weight: 600; text-align: left; padding: 0.5rem 0.5rem; border-bottom: 1px solid var(--slate-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .preview-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--slate-100); vertical-align: middle; }
+        .preview-table tr:last-child td { border-bottom: none; }
+        .preview-table .td-input { width: 100%; padding: 0.3rem 0.5rem; border: 1px solid var(--slate-200); border-radius: 6px; font-size: 0.82rem; font-family: 'DM Sans', sans-serif; color: var(--slate-900); background: white; }
+        .preview-table .td-input:focus { outline: none; border-color: var(--teal); }
+        .preview-table .td-select { width: 100%; padding: 0.3rem 0.5rem; border: 1px solid var(--slate-200); border-radius: 6px; font-size: 0.82rem; font-family: 'DM Sans', sans-serif; color: var(--slate-900); background: white; cursor: pointer; }
+        .preview-table .td-select:focus { outline: none; border-color: var(--teal); }
+        .preview-row-error td { background: #FFF5F5; }
+        .preview-error-msg { font-size: 0.72rem; color: var(--red); margin-top: 0.15rem; }
+        .preview-modal-footer { padding: 1rem 1.5rem 1.5rem; display: flex; align-items: center; gap: 0.75rem; border-top: 1px solid var(--slate-100); margin-top: 0.5rem; flex-wrap: wrap; }
+        .preview-count { flex: 1; font-size: 0.82rem; color: var(--slate-500); }
+        .preview-empty { padding: 2.5rem; text-align: center; color: var(--slate-400); }
+
+        /* ── Stock Temps Réel Integration ───────────────────────── */
+        .stock-agent-banner { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.85rem; }
+        .stock-agent-banner.online { background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; }
+        .stock-agent-banner.offline { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+        .stock-agent-banner.no-agent { background: var(--slate-100); border: 1px solid var(--slate-200); color: var(--slate-500); }
+        .stock-agent-banner.loading { background: var(--slate-100); border: 1px solid var(--slate-200); color: var(--slate-500); }
+        .stock-agent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .stock-agent-dot.online { background: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); animation: pulse-green 2s infinite; }
+        .stock-agent-dot.offline { background: #F59E0B; }
+        .stock-agent-dot.none { background: var(--slate-300); }
+        @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,0.2)} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0.1)} }
+        .stock-agent-info { flex: 1; }
+        .stock-agent-title { font-weight: 700; font-size: 0.87rem; }
+        .stock-agent-sub { font-size: 0.75rem; opacity: 0.8; margin-top: 0.1rem; }
+        .stock-badge-realtime { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .stock-badge-manual { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); }
+        .stock-badge-rupture { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+        .stock-badge-surstock { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+        .stock-stat-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .stock-stat-pill { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .stock-stat-pill.ruptures { background: #FEE2E2; color: #991B1B; }
+        .stock-stat-pill.surstocks { background: #FEF3C7; color: #92400E; }
+        .stock-stat-pill.produits { background: var(--teal-light); color: var(--teal-dark); }
+        .stock-prefill-section { background: var(--teal-50); border: 1px solid rgba(13,148,136,0.2); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+        .stock-prefill-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+        .stock-prefill-header h4 { font-size: 0.9rem; color: var(--teal-dark); display: flex; align-items: center; gap: 0.4rem; }
+        .stock-product-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 280px; overflow-y: auto; }
+        .stock-product-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: white; border: 1px solid rgba(13,148,136,0.15); border-radius: 7px; font-size: 0.8rem; }
+        .stock-product-row.rupture { border-color: #FECACA; background: #FFF5F5; }
+        .stock-product-row.surstock { border-color: #FDE68A; background: #FFFBEB; }
+        .stock-product-name { font-weight: 600; color: var(--slate-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; }
+        .stock-product-qty { font-size: 0.78rem; color: var(--slate-500); white-space: nowrap; }
+        .stock-product-sales { font-size: 0.72rem; color: var(--slate-400); white-space: nowrap; }
+        .btn-stock-add { background: var(--teal); color: white; border: none; border-radius: 5px; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; white-space: nowrap; }
+        .btn-stock-add:hover { background: var(--teal-dark); }
+        .btn-stock-add:disabled { background: var(--slate-200); color: var(--slate-400); cursor: default; }
+        .btn-stock-add-all { background: var(--teal); color: white; border: none; border-radius: 7px; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+        .btn-stock-add-all:hover { background: var(--teal-dark); }
+        .stock-alert-banner { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1rem; background: #FEF3C7; border: 1px solid #FDE68A; }
+        .stock-alert-banner.rupture-alert { background: #FEE2E2; border-color: #FECACA; }
+        .stock-alert-content { flex: 1; }
+        .stock-alert-title { font-size: 0.87rem; font-weight: 700; color: #92400E; margin-bottom: 0.25rem; }
+        .stock-alert-title.rupture { color: #991B1B; }
+        .stock-alert-items { font-size: 0.78rem; color: #78350F; line-height: 1.6; }
+        .stock-alert-items.rupture { color: #7F1D1D; }
+        .stock-ws-status { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--slate-400); margin-top: 0.5rem; }
+        .stock-ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--slate-300); flex-shrink: 0; }
+        .stock-ws-dot.connected { background: #10B981; }
+        /* ── Drag & Drop Editable Planogram ─────────────────────── */
+        .plano-edit-toolbar {
+            display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+            padding: 0.75rem 1rem; background: #EFF6FF; border: 1.5px solid #BFDBFE;
+            border-radius: 10px; margin-bottom: 1rem;
+        }
+        .plano-edit-toolbar .edit-hint {
+            flex: 1; font-size: 0.82rem; color: #1D4ED8; font-weight: 500;
+            min-width: 160px;
+        }
+        .plano-editable { display: flex; flex-direction: column; gap: 0.5rem; }
+        .plano-shelf {
+            border: 1.5px solid #CBD5E1; border-radius: 10px; overflow: hidden;
+            background: white;
+        }
+        .plano-shelf.eye-level { border-color: #6EE7B7; background: #F0FDF4; }
+        .plano-shelf-label {
+            padding: 0.4rem 0.875rem; background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+            font-size: 0.78rem; font-weight: 700; color: #475569; display: flex;
+            align-items: center; gap: 0.5rem; user-select: none;
+        }
+        .plano-shelf.eye-level .plano-shelf-label { background: #DCFCE7; color: #166534; border-bottom-color: #BBF7D0; }
+        .plano-shelf-label .eye-badge {
+            font-size: 0.68rem; background: #059669; color: white; padding: 1px 6px;
+            border-radius: 99px; font-weight: 700; letter-spacing: 0.02em;
+        }
+        .plano-items {
+            display: flex; flex-wrap: wrap; gap: 6px; padding: 0.625rem;
+            min-height: 52px; transition: background 0.15s;
+        }
+        .plano-items.drag-over { background: #EFF6FF; outline: 2px dashed #93C5FD; outline-offset: -4px; border-radius: 6px; }
+        .plano-item {
+            display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem;
+            background: white; border: 1.5px solid #E2E8F0; border-radius: 8px;
+            cursor: grab; user-select: none; min-height: 52px; min-width: 120px;
+            max-width: 240px; transition: box-shadow 0.15s, opacity 0.15s, border-color 0.15s;
+            touch-action: none; position: relative;
+        }
+        .plano-item:hover { border-color: #93C5FD; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .plano-item.dragging { opacity: 0.35; border-color: #BFDBFE; box-shadow: none; }
+        .drag-handle {
+            font-size: 1.1rem; color: #94A3B8; line-height: 1; padding: 2px;
+            cursor: grab; flex-shrink: 0; letter-spacing: -1px;
+        }
+        .item-swatch {
+            width: 12px; height: 34px; border-radius: 4px; flex-shrink: 0;
+        }
+        .item-body { flex: 1; min-width: 0; }
+        .item-name {
+            font-size: 0.78rem; font-weight: 700; color: #1E293B;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .item-dims { font-size: 0.68rem; color: #64748B; margin-top: 1px; white-space: nowrap; }
+        /* Drop insert line */
+        .plano-item.insert-before::before {
+            content: ''; position: absolute; left: -4px; top: 0; bottom: 0;
+            width: 3px; background: #3B82F6; border-radius: 99px;
+        }
+        .plano-item.insert-after::after {
+            content: ''; position: absolute; right: -4px; top: 0; bottom: 0;
+            width: 3px; background: #3B82F6; border-radius: 99px;
+        }
+        /* Touch ghost element */
+        #plano-drag-ghost {
+            position: fixed; pointer-events: none; z-index: 9999;
+            opacity: 0.88; transform: rotate(2deg) scale(1.05);
+            display: none; max-width: 220px; border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        }
+        @media (max-width: 600px) {
+            .plano-item { min-width: 100%; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SAVE NAME MODAL -->
+    <div id="saveModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; display:none; align-items:center; justify-content:center;">
+        <div style="background:var(--white); border-radius:16px; padding:2rem; max-width:400px; width:90%; margin:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
+            <h3 style="margin-bottom:0.5rem;">Sauvegarder le planogramme</h3>
+            <p style="color:var(--slate-500); font-size:0.85rem; margin-bottom:1.25rem;">Donnez un nom à votre planogramme pour le retrouver facilement.</p>
+            <input type="text" class="form-input" id="saveNameInput" placeholder="ex. Comptoir avant - Vitamines" style="margin-bottom:1rem;">
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="closeSaveModal()">Annuler</button>
+                <button class="btn btn-primary" onclick="confirmSave()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    <!-- IMPORT PREVIEW MODAL -->
+    <div id="importPreviewModal" class="preview-modal-overlay">
+        <div class="preview-modal">
+            <div class="preview-modal-header">
+                <h3>&#128202; Aperçu de l'importation</h3>
+                <p>Vérifiez et ajustez vos produits avant de les ajouter. Les lignes sans nom seront ignorées.</p>
+            </div>
+            <div class="preview-table-wrap" id="previewTableWrap">
+                <div class="preview-empty">Aucun produit à prévisualiser.</div>
+            </div>
+            <div class="preview-modal-footer">
+                <span class="preview-count" id="previewCount"></span>
+                <button class="btn btn-secondary" onclick="closeImportModal()">Annuler</button>
+                <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Ajouter tous les produits</button>
+            </div>
+        </div>
+    </div>
+    <!-- TOAST -->
+    <div id="toast" style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:var(--slate-900); color:white; padding:0.75rem 1.5rem; border-radius:10px; font-size:0.85rem; font-weight:500; z-index:200; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <a class="topbar-logo" href="/">ShelfRx <span class="topbar-pill">BETA</span></a>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <a href="/app/planograms" class="btn btn-ghost" style="font-size:0.8rem; text-decoration:none;">&#128203; Mes planogrammes</a>
+            <span class="topbar-project" id="projectName">Nouveau projet</span>
+            <div class="user-pill" id="userPill" style="display:none;" onclick="toggleUserDropdown()">
+                <span>&#128100;</span>
+                <span class="user-pill-name" id="userPillName"></span>
+                <span>&#9662;</span>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-item" id="userDropdownEmail" style="color:var(--slate-400); cursor:default; font-size:0.75rem; padding-bottom:0.25rem; border-bottom:1px solid var(--slate-100); margin-bottom:0.25rem;"></div>
+                    <div class="user-dropdown-item" onclick="window.location.href='/app/planograms'">&#128203; Mes planogrammes</div>
+                    <div class="user-dropdown-item" onclick="window.location.href='/app/analytics'">&#128200; Analytiques</div>
+                    <div class="user-dropdown-item" onclick="window.location.href='/billing'">&#128179; Mon abonnement</div>
+                    <div class="user-dropdown-item" onclick="logout()">&#128275; Se déconnecter</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TRIAL BANNER (shown when ≤5 days left) -->
+    <div id="trialBanner" style="display:none; background:#FEF3C7; border-bottom:1px solid #FDE68A; padding:0.5rem 1.5rem; text-align:center; font-size:0.82rem; color:#92400e;">
+        <span id="trialBannerText"></span>
+        <a href="/billing" style="color:#0D9488; font-weight:700; margin-left:0.75rem; text-decoration:none;">Choisir une formule →</a>
+    </div>
+    <!-- STEPPER -->
+    <div class="stepper" id="stepper">
+        <div class="step-indicator active" data-step="1" onclick="goToStep(1)">
+            <span class="step-num">1</span>
+            <span class="step-label">Photo</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-indicator" data-step="2" onclick="goToStep(2)">
+            <span class="step-num">2</span>
+            <span class="step-label">Rayon</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-indicator" data-step="3" onclick="goToStep(3)">
+            <span class="step-num">3</span>
+            <span class="step-label">Cat&eacute;gorie</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-indicator" data-step="4" onclick="goToStep(4)">
+            <span class="step-num">4</span>
+            <span class="step-label">Produits</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-indicator" data-step="5" onclick="goToStep(5)">
+            <span class="step-num">5</span>
+            <span class="step-label">Planogramme</span>
+        </div>
+    </div>
+    <!-- STEP 1: PHOTO -->
+    <div class="wizard-step active" data-step="1">
+        <div class="content">
+            <div class="card">
+                <h2 class="card-title">Photographier le rayon</h2>
+                <p class="card-subtitle">Prenez une photo de votre rayon vide ou en d&eacute;sordre. Cela vous permettra de comparer avant et apr&egrave;s. Vous pouvez passer cette &eacute;tape.</p>
+                <div class="photo-upload" id="photoUpload" onclick="document.getElementById('photoInput').click()">
+                    <div id="photoPlaceholder">
+                        <div class="photo-upload-icon">&#128247;</div>
+                        <div class="photo-upload-text">Appuyez pour prendre une photo ou t&eacute;l&eacute;charger</div>
+                        <div class="photo-upload-hint">JPG, PNG jusqu'&agrave; 10 Mo</div>
+                    </div>
+                    <img id="photoPreview" style="display:none" alt="Photo du rayon">
+                    <button class="photo-replace-btn" id="photoReplaceBtn" style="display:none" onclick="event.stopPropagation(); document.getElementById('photoInput').click()">Remplacer</button>
+                    <input type="file" id="photoInput" accept="image/*" capture="environment">
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="skipPhoto()">Passer la photo</button>
+                    <button class="btn btn-primary btn-lg" onclick="nextStep()" id="step1Next" disabled>Continuer avec la photo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- STEP 2: SHELF DIMENSIONS -->
+    <div class="wizard-step" data-step="2">
+        <div class="content">
+            <div class="card">
+                <h2 class="card-title">Dimensions du rayon</h2>
+                <p class="card-subtitle">Mesurez votre meuble-rayon. Pas besoin d'&ecirc;tre pr&eacute;cis &mdash; les dimensions approximatives conviennent.</p>
+                <!-- AI ANALYSIS BANNERS -->
+                <div id="aiLoadingBanner" class="ai-banner ai-banner-loading" style="display:none;">
+                    <div class="spinner"></div>
+                    <span>Analyse IA en cours&hellip;</span>
+                </div>
+                <div id="aiSuccessBanner" class="ai-banner ai-banner-success" style="display:none;">
+                    <span>&#129302;</span>
+                    <span>Estimation IA &mdash; v&eacute;rifiez et ajustez les dimensions si n&eacute;cessaire.</span>
+                </div>
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label class="form-label">Largeur (cm)</label>
+                        <input type="number" class="form-input" id="shelfWidth" placeholder="120" min="10" max="1000" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hauteur (cm)</label>
+                        <input type="number" class="form-input" id="shelfHeight" placeholder="200" min="10" max="500" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profondeur (cm)</label>
+                        <input type="number" class="form-input" id="shelfDepth" placeholder="40" min="5" max="200" step="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nombre de niveaux</label>
+                        <select class="form-input" id="numShelves">
+                            <option value="2">2 niveaux</option>
+                            <option value="3">3 niveaux</option>
+                            <option value="4" selected>4 niveaux</option>
+                            <option value="5">5 niveaux</option>
+                            <option value="6">6 niveaux</option>
+                            <option value="7">7 niveaux</option>
+                            <option value="8">8 niveaux</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sections (colonnes)</label>
+                        <select class="form-input" id="numSections">
+                            <option value="1" selected>1 section</option>
+                            <option value="2">2 sections</option>
+                            <option value="3">3 sections</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="prevStep()">Retour</button>
+                    <button class="btn btn-primary btn-lg" onclick="saveDimensionsAndNext()" id="step2Next">Continuer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- STEP 3: CATEGORY -->
+    <div class="wizard-step" data-step="3">
+        <div class="content">
+            <div class="card">
+                <h2 class="card-title">Cat&eacute;gorie de produits</h2>
+                <p class="card-subtitle">Quel type de produits va sur ce rayon&nbsp;? Cela aide &agrave; organiser le planogramme.</p>
+                <div class="category-grid">
+                    <div class="category-card" onclick="selectCategory(this, 'otc')" data-cat="otc">
+                        <div class="category-icon">&#128138;</div>
+                        <div class="category-label">M&eacute;dicaments OTC</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'vitamins')" data-cat="vitamins">
+                        <div class="category-icon">&#128154;</div>
+                        <div class="category-label">Vitamines</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'skincare')" data-cat="skincare">
+                        <div class="category-icon">&#129526;</div>
+                        <div class="category-label">Soins de la peau</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'hygiene')" data-cat="hygiene">
+                        <div class="category-icon">&#129532;</div>
+                        <div class="category-label">Hygi&egrave;ne</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'baby')" data-cat="baby">
+                        <div class="category-icon">&#128118;</div>
+                        <div class="category-label">Pu&eacute;riculture</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'prescriptions')" data-cat="prescriptions">
+                        <div class="category-icon">&#128203;</div>
+                        <div class="category-label">Ordonnances</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'dental')" data-cat="dental">
+                        <div class="category-icon">&#129463;</div>
+                        <div class="category-label">Dentaire</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'first_aid')" data-cat="first_aid">
+                        <div class="category-icon">&#129657;</div>
+                        <div class="category-label">Premiers secours</div>
+                    </div>
+                    <div class="category-card" onclick="selectCategory(this, 'other')" data-cat="other">
+                        <div class="category-icon">&#128230;</div>
+                        <div class="category-label">Autre</div>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="prevStep()">Retour</button>
+                    <button class="btn btn-primary btn-lg" onclick="saveCategoryAndNext()" id="step3Next" disabled>Continuer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- STEP 4: PRODUCTS -->
+    <div class="wizard-step" data-step="4">
+        <div class="content">
+            <div class="card">
+                <h2 class="card-title">Ajoutez vos produits</h2>
+                <p class="card-subtitle">Saisissez chaque produit avec sa quantit&eacute; en stock et ses dimensions de bo&icirc;te. Conseil&nbsp;: v&eacute;rifiez l'emballage du produit pour les dimensions.</p>
+                <!-- STOCK TEMPS RÉEL -->
+                <div id="stockAgentSection"></div>
+                <!-- AI PRODUCT DETECTION -->
+                <div id="aiDetectSection" class="ai-detect-section" style="display:none;"></div>
+                <!-- IMPORT STRIP -->
+                <div class="import-strip">
+                    <div class="import-strip-text">
+                        <strong>&#128196; Importer depuis un fichier</strong>
+                        <span>CSV ou Excel (.xlsx) — idéal pour 10+ produits</span>
+                    </div>
+                    <button class="btn-template" onclick="downloadTemplate()">&#11123; Modèle CSV</button>
+                    <button class="btn-import" onclick="document.getElementById('csvImportInput').click()">&#128196; Importer CSV / Excel</button>
+                    <input type="file" id="csvImportInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(event)">
+                </div>
+                <div class="scan-bar">
+                    <button class="btn-scan" onclick="openScanner()">&#128247; Scanner un code-barres</button>
+                </div>
+                <div class="import-divider">ou ajouter manuellement</div>
+                <div class="add-product-form" id="addProductForm">
+                    <h4>Ajouter un produit</h4>
+                    <div class="form-group">
+                        <label class="form-label">Nom du produit</label>
+                        <input type="text" class="form-input" id="prodName" placeholder="ex. Doliprane 500mg">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Quantit&eacute; en stock</label>
+                            <input type="number" class="form-input" id="prodQty" placeholder="24" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priorit&eacute; de vente</label>
+                            <select class="form-input" id="prodPriority">
+                                <option value="high">Haute (niveau des yeux)</option>
+                                <option value="medium" selected>Moyenne</option>
+                                <option value="low">Basse</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label class="form-label">Largeur (cm)</label>
+                            <input type="number" class="form-input" id="prodWidth" placeholder="8" min="0.5" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hauteur (cm)</label>
+                            <input type="number" class="form-input" id="prodHeight" placeholder="12" min="0.5" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Profondeur (cm)</label>
+                            <input type="number" class="form-input" id="prodDepth" placeholder="4" min="0.5" step="0.5">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="addProduct()">+ Ajouter le produit</button>
+                </div>
+                <div id="productList">
+                    <div class="empty-state" id="emptyProducts">
+                        <div class="empty-state-icon">&#128230;</div>
+                        <p>Aucun produit ajout&eacute;</p>
+                    </div>
+                </div>
+                <!-- Hidden file input shared for all product image uploads -->
+                <input type="file" id="productImageInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleProductImageUpload(event)">
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="prevStep()">Retour</button>
+                    <button class="btn btn-primary btn-lg" onclick="generatePlanogram()" id="step4Next" disabled>
+                        G&eacute;n&eacute;rer le planogramme
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- STEP 5: PLANOGRAM -->
+    <div class="wizard-step" data-step="5">
+        <div class="planogram-container">
+            <div class="planogram-header no-print">
+                <div>
+                    <h2 class="card-title">Votre planogramme</h2>
+                    <p style="color: var(--slate-500); font-size: 0.9rem;">Placez les produits exactement comme indiqu&eacute; ci-dessous.</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="goToStep(4)">Modifier les produits</button>
+                    <button class="btn btn-secondary" id="editModeBtn" onclick="startEditMode()">&#9999; R&eacute;organiser</button>
+                    <button class="btn btn-secondary" onclick="window.print()">&#128424; Imprimer / PDF</button>
+                    <button class="btn btn-secondary" id="copyLinkBtn" onclick="copyShareLink()" style="display:none;">&#128203; Copier le lien</button>
+                    <button class="btn btn-secondary" id="downloadPngBtn" onclick="downloadPlanogramPng()" style="display:none;">&#128247; PNG</button>
+                    <button class="btn btn-primary" onclick="openSaveModal()" id="saveBtn">&#128190; Sauvegarder</button>
+                    <button class="btn btn-secondary" onclick="startNewProject()">+ Nouveau</button>
+                </div>
+            </div>
+            <div class="planogram-stats" id="planogramStats"></div>
+            <!-- STOCK ALERTS (shown when agent is connected) -->
+            <div id="stockPlanogramAlerts"></div>
+            <div class="planogram-layout" id="planogramLayout">
+                <div class="photo-reference" id="photoRef" style="display:none">
+                    <h4>Photo de r&eacute;f&eacute;rence</h4>
+                    <img id="refPhoto" alt="Photo du rayon">
+                </div>
+                <div class="planogram-visual" id="planogramVisual">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 1rem; color: var(--slate-400);">G&eacute;n&eacute;ration du planogramme...</p>
+                    </div>
+                </div>
+            </div>
+            <div id="notPlacedSection"></div>
+        </div>
+    </div>
+    <script>
+    // ========== AUTH ==========
+    let currentUser = null;
+    let subscriptionStatus = 'trial';
+    let daysLeft = 7;
+
+    function getAuthHeaders() {
+        const token = localStorage.getItem('shelfrx_token');
+        return token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+    }
+
+    function canCreate() {
+        return subscriptionStatus === 'active' || subscriptionStatus === 'trial';
+    }
+
+    async function initAuth() {
+        const token = localStorage.getItem('shelfrx_token');
+        if (!token) {
+            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+            return false;
+        }
+        try {
+            const r = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (r.status === 401) {
+                localStorage.removeItem('shelfrx_token');
+                localStorage.removeItem('shelfrx_user');
+                window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+                return false;
+            }
+            if (r.ok) {
+                const data = await r.json();
+                currentUser = data;
+                subscriptionStatus = data.subscription_status;
+                daysLeft = data.days_left || 0;
+                localStorage.setItem('shelfrx_user', JSON.stringify(data));
+
+                // Paywall: redirect to billing if trial/subscription expired
+                const status = data.subscription_status;
+                if (status !== 'active' && status !== 'trial') {
+                    window.location.href = '/billing';
+                    return false;
+                }
+
+                // Trial banner for users with ≤5 days left
+                if (status === 'trial' && daysLeft <= 5) {
+                    const banner = document.getElementById('trialBanner');
+                    const bannerText = document.getElementById('trialBannerText');
+                    if (banner && bannerText) {
+                        bannerText.textContent = daysLeft <= 1
+                            ? `⚠️ Votre essai expire demain — choisissez votre formule pour conserver l'accès.`
+                            : `⚠️ Plus que ${daysLeft} jours d'essai gratuit.`;
+                        banner.style.display = 'block';
+                    }
+                }
+
+                // Update user pill
+                const pill = document.getElementById('userPill');
+                const pillName = document.getElementById('userPillName');
+                const pillEmail = document.getElementById('userDropdownEmail');
+                if (pill) { pill.style.display = 'flex'; }
+                if (pillName) { pillName.textContent = data.pharmacy_name || data.name || data.email; }
+                if (pillEmail) { pillEmail.textContent = data.email; }
+            }
+        } catch (e) {
+            console.warn('Auth check failed, continuing in offline mode');
+        }
+        return true;
+    }
+
+    function toggleUserDropdown() {
+        document.getElementById('userDropdown').classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+        const pill = document.getElementById('userPill');
+        if (pill && !pill.contains(e.target)) {
+            const dd = document.getElementById('userDropdown');
+            if (dd) dd.classList.remove('open');
+        }
+    });
+
+    async function logout() {
+        const token = localStorage.getItem('shelfrx_token');
+        if (token) {
+            fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }).catch(() => {});
+        }
+        localStorage.removeItem('shelfrx_token');
+        localStorage.removeItem('shelfrx_user');
+        window.location.href = '/login';
+    }
+
+    // ========== STATE ==========
+    let projectId = null;
+    let currentStep = 1;
+    let wizardStartedTracked = false; // guard for wizard_started event
+    let wizardStarted = false;        // true once user visits step 2+ — gates phantom draft creation
+    let photoUrl = null;
+    let selectedCategory = null;
+    let products = [];
+    let projectSaved = false;
+    let currentPlanogram = null;  // stores planogram JSON for drag & drop editing
+
+    // ========== STOCK TEMPS RÉEL STATE ==========
+    let stockWizardContext = null;      // { connected, is_online, products, last_sync, ... }
+    let stockContextLoading = false;
+    let stockContextLoaded = false;
+    let stockAddedCips = new Set();     // tracks which stock products are already in wizard
+    let stockWs = null;                 // WebSocket for live updates
+    let stockWsConnected = false;
+
+    // AI shelf analysis state
+    // null = not started, 'loading' = in progress, false = failed/skipped, object = estimates
+    let aiEstimates = null;
+
+    // AI product detection state
+    // null = not started, 'loading' = in progress, false = failed, array = results
+    let aiDetectedProducts = null;
+
+    const priorityLabels = {
+        high: 'Haute',
+        medium: 'Moyenne',
+        low: 'Basse'
+    };
+
+    // ========== DEVICE ID ==========
+    function getDeviceId() {
+        let id = localStorage.getItem('shelfrx_device_id');
+        if (!id) {
+            id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('shelfrx_device_id', id);
+        }
+        return id;
+    }
+
+    // ========== ANALYTICS TRACKING ==========
+    // Fire-and-forget — never blocks the UI
+    function track(event, metadata) {
+        try {
+            const body = {
+                event_type: event,
+                device_id: getDeviceId(),
+                metadata: metadata || {}
+            };
+            // Use sendBeacon for reliability on page unload; fetch otherwise
+            if (navigator.sendBeacon && event === 'page_view') {
+                navigator.sendBeacon('/api/analytics/track', JSON.stringify(body));
+            } else {
+                fetch('/api/analytics/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                }).catch(() => {});
+            }
+        } catch (e) { /* non-blocking */ }
+    }
+
+    // ========== SAVE / LOAD ==========
+    function openSaveModal() {
+        const nameInput = document.getElementById('saveNameInput');
+        const currentName = document.getElementById('projectName').textContent;
+        nameInput.value = (currentName === 'Nouveau projet') ? '' : currentName;
+        document.getElementById('saveModal').style.display = 'block';
+        nameInput.focus();
+        nameInput.addEventListener('keydown', function handler(e) {
+            if (e.key === 'Enter') { confirmSave(); nameInput.removeEventListener('keydown', handler); }
+            if (e.key === 'Escape') { closeSaveModal(); nameInput.removeEventListener('keydown', handler); }
+        });
+    }
+
+    function closeSaveModal() {
+        document.getElementById('saveModal').style.display = 'none';
+    }
+
+    async function confirmSave() {
+        const name = document.getElementById('saveNameInput').value.trim();
+        if (!name) {
+            document.getElementById('saveNameInput').focus();
+            return;
+        }
+        try {
+            await fetch(`/api/projects/${projectId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            document.getElementById('projectName').textContent = name;
+            projectSaved = true;
+            track('planogram_saved', { num_products: products.length });
+            closeSaveModal();
+            showToast('Planogramme sauvegardé !');
+        } catch (err) {
+            console.error('Save failed:', err);
+            showToast('Sauvegarde échouée. Veuillez réessayer.');
+        }
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    async function loadProject(id) {
+        try {
+            const res = await fetch(`/api/projects/${id}`);
+            if (!res.ok) throw new Error('Not found');
+            const data = await res.json();
+
+            projectId = data.id;
+            products = data.products || [];
+
+            if (data.name && data.name !== 'Untitled Project') {
+                document.getElementById('projectName').textContent = data.name;
+                projectSaved = true;
+            }
+
+            if (data.photo_url) {
+                photoUrl = data.photo_url;
+                document.getElementById('photoPreview').src = photoUrl;
+                document.getElementById('photoPreview').style.display = 'block';
+                document.getElementById('photoPlaceholder').style.display = 'none';
+                document.getElementById('photoReplaceBtn').style.display = 'block';
+                document.getElementById('photoUpload').classList.add('has-photo');
+                document.getElementById('step1Next').disabled = false;
+            }
+
+            if (data.shelf_width) document.getElementById('shelfWidth').value = data.shelf_width;
+            if (data.shelf_height) document.getElementById('shelfHeight').value = data.shelf_height;
+            if (data.shelf_depth) document.getElementById('shelfDepth').value = data.shelf_depth;
+            if (data.num_shelves) document.getElementById('numShelves').value = data.num_shelves;
+            if (data.num_sections) document.getElementById('numSections').value = data.num_sections;
+
+            if (data.category) {
+                selectedCategory = data.category;
+                const catCard = document.querySelector(`.category-card[data-cat="${data.category}"]`);
+                if (catCard) catCard.classList.add('selected');
+                document.getElementById('step3Next').disabled = false;
+            }
+
+            renderProductList();
+
+            if (data.planogram && products.length > 0) {
+                goToStep(5);
+                renderPlanogramStats(data.planogram.summary);
+                // Enrich saved planogram items with current product images (in case
+                // they were added after the planogram was last generated)
+                const imgMap = {};
+                products.forEach(p => { if (p.image_url) imgMap[p.id] = { image_url: p.image_url, image_source: p.image_source }; });
+                if (data.planogram.shelves) {
+                    data.planogram.shelves.forEach(shelf => {
+                        shelf.items.forEach(item => {
+                            const key = item.product_id || item.id;
+                            if (!item.image_url && imgMap[key]) {
+                                item.image_url = imgMap[key].image_url;
+                                item.image_source = imgMap[key].image_source;
+                            }
+                        });
+                    });
+                }
+                currentPlanogram = data.planogram;
+                renderPlanogramSVG(data.planogram);
+                renderNotPlaced(data.planogram.summary.not_placed);
+                activateShareButtons();
+                if (photoUrl) {
+                    document.getElementById('refPhoto').src = photoUrl;
+                    document.getElementById('photoRef').style.display = 'block';
+                    document.getElementById('planogramLayout').classList.remove('no-photo');
+                } else {
+                    document.getElementById('photoRef').style.display = 'none';
+                    document.getElementById('planogramLayout').classList.add('no-photo');
+                }
+            } else if (products.length > 0) {
+                goToStep(4);
+            } else if (data.category) {
+                goToStep(3);
+            } else if (data.shelf_width) {
+                goToStep(2);
+            }
+
+            return true;
+        } catch (err) {
+            console.error('Load project failed:', err);
+            return false;
+        }
+    }
+
+    // ========== INIT ==========
+    async function init() {
+        // Auth check first
+        const authed = await initAuth();
+        if (!authed) return;
+
+        // Track page view
+        track('page_view', { page: 'app' });
+
+        const deviceId = getDeviceId();
+        const params = new URLSearchParams(window.location.search);
+        const loadId = params.get('load');
+
+        // If loading existing project
+        if (loadId) {
+            try {
+                const loaded = await loadProject(loadId);
+                if (loaded) {
+                    setupEventListeners();
+                    return;
+                }
+                // loadProject returned false — don't fall through to create new project;
+                // stay at step 1 with no project rather than overwriting with a blank draft
+                setupEventListeners();
+                return;
+            } catch (err) {
+                console.error('Load project failed:', err);
+                showToast('Impossible de charger ce planogramme. Ouvrez un nouveau projet.');
+                setupEventListeners();
+                return;
+            }
+        }
+
+        // Only create a new project draft when the user hasn't started the wizard yet.
+        // Prevents phantom "Sans titre / Brouillon" entries on every page load.
+        if (!wizardStarted) {
+            try {
+                const res = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ name: 'Untitled Project', device_id: deviceId })
+                });
+                const data = await res.json();
+                projectId = data.id;
+            } catch (err) {
+                console.error('Failed to create project:', err);
+            }
+        }
+        document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
+        document.getElementById('prodDepth').addEventListener('keydown', e => {
+            if (e.key === 'Enter') addProduct();
+        });
+    }
+
+    // ========== NAVIGATION ==========
+    function goToStep(step) {
+        if (step > currentStep + 1) return;
+
+        // Track wizard_started on first visit to step 1
+        if (step === 1 && !wizardStartedTracked) {
+            wizardStartedTracked = true;
+            track('wizard_started');
+        }
+
+        // Mark wizard as started once user reaches step 2+ (dimensions entered).
+        // Guards against auto-creating phantom drafts on every page load.
+        if (step >= 2) {
+            wizardStarted = true;
+        }
+        if (step === 5 && products.length === 0) return;
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.wizard-step[data-step="${step}"]`).classList.add('active');
+        document.querySelectorAll('.step-indicator').forEach(el => {
+            const s = parseInt(el.dataset.step);
+            el.classList.remove('active', 'completed');
+            if (s === step) el.classList.add('active');
+            else if (s < step) el.classList.add('completed');
+        });
+        document.querySelectorAll('.step-connector').forEach((el, i) => {
+            el.classList.toggle('completed', i < step - 1);
+        });
+        currentStep = step;
+        window.scrollTo(0, 0);
+
+        // Step 2: show AI banners + pre-fill if estimates ready
+        if (step === 2) {
+            updateAiBanners();
+            if (aiEstimates && aiEstimates !== 'loading') {
+                applyAiEstimates();
+            }
+        }
+
+        // Step 4: trigger AI product detection + stock wizard context
+        if (step === 4) {
+            renderAiDetectSection(); // always refresh the section state
+            if (photoUrl && aiDetectedProducts === null) {
+                detectProductsWithAI();
+            }
+            // Load stock wizard context once
+            if (!stockContextLoaded && !stockContextLoading) {
+                loadStockWizardContext();
+            } else {
+                renderStockAgentSection();
+            }
+        }
+    }
+    function nextStep() { goToStep(currentStep + 1); }
+    function prevStep() { if (currentStep > 1) goToStep(currentStep - 1); }
+
+    // ========== STOCK TEMPS RÉEL ==========
+
+    async function loadStockWizardContext() {
+        stockContextLoading = true;
+        renderStockAgentSection(); // show loading state
+        try {
+            const res = await fetch('/api/stock/wizard-context', { headers: getAuthHeaders() });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            stockWizardContext = await res.json();
+            stockContextLoaded = true;
+        } catch (e) {
+            console.warn('Stock wizard context unavailable:', e);
+            stockWizardContext = { connected: false };
+            stockContextLoaded = true;
+        } finally {
+            stockContextLoading = false;
+            renderStockAgentSection();
+            // If connected, open WebSocket for live updates
+            if (stockWizardContext && stockWizardContext.connected && stockWizardContext.agent) {
+                openStockWebSocket(stockWizardContext.agent.id);
+            }
+        }
+    }
+
+    function openStockWebSocket(agentId) {
+        if (stockWs && stockWs.readyState < 2) return; // already open/connecting
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        stockWs = new WebSocket(`${proto}//${location.host}/ws/stock/${agentId}`);
+        stockWs.onopen = () => {
+            stockWsConnected = true;
+            updateStockWsStatus();
+        };
+        stockWs.onclose = () => {
+            stockWsConnected = false;
+            updateStockWsStatus();
+        };
+        stockWs.onerror = () => { stockWsConnected = false; };
+        stockWs.onmessage = (evt) => {
+            try {
+                const msg = JSON.parse(evt.data);
+                if (msg.type === 'stock_update' && msg.updated) {
+                    applyStockUpdate(msg.updated);
+                }
+            } catch (_) {}
+        };
+    }
+
+    function applyStockUpdate(updatedProducts) {
+        if (!stockWizardContext || !stockWizardContext.products) return;
+        let changed = false;
+        updatedProducts.forEach(upd => {
+            const existing = stockWizardContext.products.find(p => p.cip_code === upd.cip_code);
+            if (existing) {
+                const oldQty = existing.quantity_on_hand;
+                existing.quantity_on_hand = parseInt(upd.quantity_on_hand) || 0;
+                existing.last_updated = upd.last_updated;
+                existing.last_event_type = upd.last_event_type;
+                existing.is_rupture = existing.quantity_on_hand <= 0;
+                existing.is_surstock = existing.weekly_sales > 0 && existing.quantity_on_hand > existing.weekly_sales * 8;
+                if (oldQty !== existing.quantity_on_hand) changed = true;
+            }
+        });
+        if (changed) {
+            stockWizardContext.ruptures = stockWizardContext.products.filter(p => p.is_rupture).length;
+            stockWizardContext.surstocks = stockWizardContext.products.filter(p => p.is_surstock).length;
+            renderStockAgentSection();
+            // If on step 5, refresh planogram alerts
+            if (currentStep === 5 && currentPlanogram) {
+                renderStockPlanogramAlerts();
+            }
+        }
+    }
+
+    function updateStockWsStatus() {
+        const el = document.getElementById('stockWsStatusDot');
+        const txt = document.getElementById('stockWsStatusText');
+        if (!el) return;
+        if (stockWsConnected) {
+            el.className = 'stock-ws-dot connected';
+            if (txt) txt.textContent = 'Mises à jour en temps réel actives';
+        } else {
+            el.className = 'stock-ws-dot';
+            if (txt) txt.textContent = 'Connexion en cours…';
+        }
+    }
+
+    function renderStockAgentSection() {
+        const container = document.getElementById('stockAgentSection');
+        if (!container) return;
+
+        if (stockContextLoading) {
+            container.innerHTML = `<div class="stock-agent-banner loading">
+                <div class="spinner" style="width:14px;height:14px;border-width:2px;flex-shrink:0;"></div>
+                <div class="stock-agent-info"><div class="stock-agent-title">Vérification du stock en temps réel…</div></div>
+            </div>`;
+            return;
+        }
+
+        if (!stockWizardContext || !stockWizardContext.connected) {
+            container.innerHTML = `<div class="stock-agent-banner no-agent">
+                <div class="stock-agent-dot none"></div>
+                <div class="stock-agent-info">
+                    <div class="stock-agent-title">📦 Pas d'agent stock connecté</div>
+                    <div class="stock-agent-sub">Saisie manuelle · <a href="/app/stock" style="color:var(--teal);text-decoration:none;">Connecter l'agent PN13 →</a></div>
+                </div>
+                <span class="stock-badge-manual">Saisie manuelle</span>
+            </div>`;
+            return;
+        }
+
+        const ctx = stockWizardContext;
+        const statusClass = ctx.is_online ? 'online' : 'offline';
+        const dotClass = ctx.is_online ? 'online' : 'offline';
+        const statusLabel = ctx.is_online ? 'En ligne' : 'Hors ligne (dernières données)';
+        const lastSync = ctx.last_sync ? new Date(ctx.last_sync).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '–';
+
+        let statsHtml = `<div class="stock-stat-row">
+            <span class="stock-stat-pill produits">📦 ${ctx.total} produits</span>
+            ${ctx.ruptures > 0 ? `<span class="stock-stat-pill ruptures">⚠️ ${ctx.ruptures} rupture${ctx.ruptures > 1 ? 's' : ''}</span>` : ''}
+            ${ctx.surstocks > 0 ? `<span class="stock-stat-pill surstocks">📈 ${ctx.surstocks} surstock${ctx.surstocks > 1 ? 's' : ''}</span>` : ''}
+        </div>`;
+
+        // Show prefill section if products available
+        let prefillHtml = '';
+        if (ctx.products && ctx.products.length > 0) {
+            // Filter: show top 30 by rotation (non-rupture first, sorted by weekly_sales desc)
+            const sortedProducts = [...ctx.products]
+                .sort((a, b) => (b.is_rupture ? -1 : 0) - (a.is_rupture ? -1 : 0) || b.rotation_score - a.rotation_score)
+                .slice(0, 30);
+
+            const rowsHtml = sortedProducts.map(p => {
+                const isAdded = stockAddedCips.has(p.cip_code);
+                const rowClass = p.is_rupture ? 'rupture' : p.is_surstock ? 'surstock' : '';
+                const badge = p.is_rupture
+                    ? '<span class="stock-badge-rupture">⚠️ Rupture</span>'
+                    : p.is_surstock
+                    ? '<span class="stock-badge-surstock">📈 Surstock</span>'
+                    : '';
+                const sales = p.weekly_sales > 0 ? `${p.weekly_sales}/sem.` : '';
+                const name = escHtml((p.label || p.cip_code || '').substring(0, 40));
+                return `<div class="stock-product-row ${rowClass}" id="stock-row-${p.cip_code}">
+                    <div>
+                        <div class="stock-product-name">${name}</div>
+                        <div style="display:flex;gap:0.3rem;margin-top:0.15rem;flex-wrap:wrap;">${badge}</div>
+                    </div>
+                    <div class="stock-product-qty">${p.quantity_on_hand} u.</div>
+                    <div class="stock-product-sales">${sales}</div>
+                    <button class="btn-stock-add" onclick="addStockProductToWizard(${JSON.stringify(p).replace(/"/g, '&quot;')})" ${isAdded ? 'disabled' : ''} id="btn-stock-${p.cip_code}">${isAdded ? '✓' : '+ Ajouter'}</button>
+                </div>`;
+            }).join('');
+
+            const nonAddedCount = sortedProducts.filter(p => !stockAddedCips.has(p.cip_code)).length;
+
+            prefillHtml = `<div class="stock-prefill-section">
+                <div class="stock-prefill-header">
+                    <h4>📋 Produits en stock (top 30 par rotation)</h4>
+                    <button class="btn-stock-add-all" onclick="addAllStockProducts()" ${nonAddedCount === 0 ? 'disabled' : ''}>+ Tout ajouter (${nonAddedCount})</button>
+                </div>
+                <div class="stock-product-list">${rowsHtml}</div>
+                <div class="stock-ws-status">
+                    <div class="stock-ws-dot${stockWsConnected ? ' connected' : ''}" id="stockWsStatusDot"></div>
+                    <span id="stockWsStatusText">${stockWsConnected ? 'Mises à jour en temps réel actives' : 'Connexion WebSocket…'}</span>
+                </div>
+            </div>`;
+        }
+
+        container.innerHTML = `<div class="stock-agent-banner ${statusClass}">
+            <div class="stock-agent-dot ${dotClass}"></div>
+            <div class="stock-agent-info">
+                <div class="stock-agent-title">Stock temps réel · ${statusLabel}</div>
+                <div class="stock-agent-sub">Dernière synchro : ${lastSync}</div>
+            </div>
+            <span class="stock-badge-realtime">⚡ Temps réel</span>
+        </div>
+        ${statsHtml}
+        ${prefillHtml}`;
+    }
+
+    async function addStockProductToWizard(stockProduct) {
+        // Mark as added immediately for UX
+        stockAddedCips.add(stockProduct.cip_code);
+        const btn = document.getElementById(`btn-stock-${stockProduct.cip_code}`);
+        if (btn) { btn.disabled = true; btn.textContent = '✓'; }
+
+        // Build product to add — needs dimensions. Use defaults for pharmacy items (standard box)
+        const name = stockProduct.label || stockProduct.cip_code;
+        const qty = stockProduct.is_rupture ? 0 : (stockProduct.quantity_on_hand || 1);
+        // Smart priority from rotation
+        let priority = 'medium';
+        if (stockProduct.weekly_sales >= 20) priority = 'high';
+        else if (stockProduct.weekly_sales >= 5) priority = 'medium';
+        else priority = 'low';
+        if (stockProduct.is_rupture) priority = 'low';
+
+        // Default pharma box dimensions (8×12×4cm)
+        const width = 8, height = 12, depth = 4;
+
+        try {
+            const res = await fetch(`/api/projects/${projectId}/products`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ name, quantity: Math.max(1, qty), width, height, depth, priority })
+            });
+            const product = await res.json();
+            // Tag it so it shows the stock badge
+            product._stock_enriched = true;
+            product._weekly_sales = stockProduct.weekly_sales;
+            product._is_rupture = stockProduct.is_rupture;
+            product._is_surstock = stockProduct.is_surstock;
+            product._cip_code = stockProduct.cip_code;
+            product._imageLoading = true;
+            products.push(product);
+            renderProductList();
+            pollProductImageOnce(product.id, 8000);
+        } catch (err) {
+            console.error('Add stock product failed:', err);
+            stockAddedCips.delete(stockProduct.cip_code);
+            if (btn) { btn.disabled = false; btn.textContent = '+ Ajouter'; }
+        }
+    }
+
+    async function addAllStockProducts() {
+        if (!stockWizardContext || !stockWizardContext.products) return;
+        const toAdd = stockWizardContext.products
+            .filter(p => !stockAddedCips.has(p.cip_code) && !p.is_rupture)
+            .sort((a, b) => b.rotation_score - a.rotation_score)
+            .slice(0, 30);
+
+        if (toAdd.length === 0) return;
+
+        showToast(`Ajout de ${toAdd.length} produits…`);
+        // Add sequentially to avoid hammering the server
+        for (const p of toAdd) {
+            await addStockProductToWizard(p);
+            await new Promise(r => setTimeout(r, 60));
+        }
+        renderStockAgentSection();
+        showToast(`✅ ${toAdd.length} produits ajoutés depuis le stock !`);
+    }
+
+    // Render stock alerts in Step 5 planogram view
+    function renderStockPlanogramAlerts() {
+        const container = document.getElementById('stockPlanogramAlerts');
+        if (!container) return;
+        if (!stockWizardContext || !stockWizardContext.connected || !currentPlanogram) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const ruptures = stockWizardContext.products.filter(p => p.is_rupture);
+        const surstocks = stockWizardContext.products.filter(p => p.is_surstock);
+
+        let html = '';
+        if (ruptures.length > 0) {
+            const items = ruptures.slice(0, 5).map(p => `<span>• ${escHtml((p.label || p.cip_code).substring(0, 35))}</span>`).join(' ');
+            const more = ruptures.length > 5 ? ` <span>+ ${ruptures.length - 5} autres</span>` : '';
+            html += `<div class="stock-alert-banner rupture-alert">
+                <span style="font-size:1.1rem">⚠️</span>
+                <div class="stock-alert-content">
+                    <div class="stock-alert-title rupture">Ruptures de stock détectées — retirer du rayon</div>
+                    <div class="stock-alert-items rupture">${items}${more}</div>
+                </div>
+            </div>`;
+        }
+        if (surstocks.length > 0) {
+            const items = surstocks.slice(0, 5).map(p => `<span>• ${escHtml((p.label || p.cip_code).substring(0, 35))} (${p.quantity_on_hand} u.)</span>`).join(' ');
+            const more = surstocks.length > 5 ? ` <span>+ ${surstocks.length - 5} autres</span>` : '';
+            html += `<div class="stock-alert-banner">
+                <span style="font-size:1.1rem">📈</span>
+                <div class="stock-alert-content">
+                    <div class="stock-alert-title">Surstocks détectés — augmenter les facings</div>
+                    <div class="stock-alert-items">${items}${more}</div>
+                </div>
+            </div>`;
+        }
+
+        if (html && stockWizardContext.connected) {
+            html += `<div class="stock-ws-status" style="margin-bottom:0.75rem;margin-left:0.25rem;">
+                <div class="stock-ws-dot${stockWsConnected ? ' connected' : ''}" id="stockWsStatusDot5"></div>
+                <span>${stockWsConnected ? 'Suivi temps réel actif' : 'Suivi stock en attente…'}</span>
+            </div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    // ========== AI SHELF ANALYSIS ==========
+
+    // Compress image to max 1200px wide/tall, JPEG 0.68 quality
+    function compressImageForAI(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = function() {
+                URL.revokeObjectURL(url);
+                const MAX = 1200;
+                let w = img.width, h = img.height;
+                if (w > MAX || h > MAX) {
+                    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                    else { w = Math.round(w * MAX / h); h = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', 0.68));
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+            img.src = url;
+        });
+    }
+
+    async function analyzeShelfPhoto(file) {
+        aiEstimates = 'loading';
+        // If already on step 2, show loading banner immediately
+        if (currentStep === 2) updateAiBanners();
+
+        // Retry up to 2 times (total 3 attempts) for transient failures
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const compressed = await compressImageForAI(file);
+                console.log('[AI shelf] Sending to API, attempt', attempt + 1, ', payload size:', Math.round(compressed.length / 1024), 'KB');
+                const res = await fetch('/api/analyze-shelf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ photo: compressed })
+                });
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => '');
+                    console.warn('[AI shelf] API returned', res.status, errText);
+                    throw new Error('API error ' + res.status);
+                }
+                const data = await res.json();
+                console.log('[AI shelf] Response:', JSON.stringify(data).substring(0, 200));
+                if (data.ai_estimated) {
+                    aiEstimates = data;
+                    break; // success
+                } else {
+                    aiEstimates = false;
+                    break; // API responded but no estimation — don't retry
+                }
+            } catch (err) {
+                console.warn('[AI shelf] Attempt', attempt + 1, 'failed:', err.message || err);
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 1500 * (attempt + 1))); // backoff
+                    continue;
+                }
+                aiEstimates = false;
+            }
+        }
+
+        // Always apply and update — the user may have navigated to step 2 already
+        // (or will arrive there moments later). Safe to call from any step.
+        applyAiEstimates();
+        updateAiBanners();
+    }
+
+    function applyAiEstimates() {
+        if (!aiEstimates || aiEstimates === 'loading') return;
+        const w = document.getElementById('shelfWidth');
+        const h = document.getElementById('shelfHeight');
+        const d = document.getElementById('shelfDepth');
+        const ns = document.getElementById('numShelves');
+        // Only pre-fill if field is still empty (user may have typed already)
+        if (!w.value) w.value = aiEstimates.width;
+        if (!h.value) h.value = aiEstimates.height;
+        if (!d.value) d.value = aiEstimates.depth;
+        if (ns.value === '4') ns.value = Math.min(Math.max(aiEstimates.num_shelves, 2), 8); // only update if still default
+    }
+
+    function updateAiBanners() {
+        const loadingEl = document.getElementById('aiLoadingBanner');
+        const successEl = document.getElementById('aiSuccessBanner');
+        if (!loadingEl || !successEl) return;
+        loadingEl.style.display = (aiEstimates === 'loading') ? 'flex' : 'none';
+        successEl.style.display = (aiEstimates && aiEstimates !== 'loading') ? 'flex' : 'none';
+    }
+
+    // ========== AI PRODUCT DETECTION ==========
+
+    // Compress a base64 data URL to max 1200px, JPEG 0.72 quality (for AI input)
+    function compressDataUrlForAI(dataUrl) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                const MAX = 1200;
+                let w = img.width, h = img.height;
+                if (w > MAX || h > MAX) {
+                    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                    else { w = Math.round(w * MAX / h); h = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', 0.72));
+            };
+            img.onerror = () => resolve(dataUrl); // fallback: use original
+            img.src = dataUrl;
+        });
+    }
+
+    async function detectProductsWithAI() {
+        if (!photoUrl) return; // No photo to analyze
+        if (aiDetectedProducts !== null) return; // Already started or done
+
+        aiDetectedProducts = 'loading';
+        renderAiDetectSection();
+
+        // Retry up to 2 times for transient failures
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                // Compress photo before sending — raw DB photos can be 5-10MB
+                const compressed = await compressDataUrlForAI(photoUrl);
+
+                const shelfW = document.getElementById('shelfWidth').value || null;
+                const shelfH = document.getElementById('shelfHeight').value || null;
+                const numSh  = document.getElementById('numShelves').value  || null;
+
+                if (attempt === 0) track('ai_detection_used', { has_shelf_dims: !!(shelfW && shelfH && numSh) });
+                console.log('[AI detect] Attempt', attempt + 1, ', payload:', Math.round(compressed.length / 1024), 'KB');
+
+                const res = await fetch('/api/ai/detect-products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        photo: compressed,
+                        shelf_width: shelfW ? parseFloat(shelfW) : null,
+                        shelf_height: shelfH ? parseFloat(shelfH) : null,
+                        num_shelves: numSh ? parseInt(numSh) : null,
+                        category: selectedCategory || null
+                    })
+                });
+                if (!res.ok) {
+                    console.warn('[AI detect] API returned', res.status);
+                    throw new Error('API error ' + res.status);
+                }
+                const data = await res.json();
+                console.log('[AI detect] Response:', data.detected, data.products ? data.products.length + ' products' : 'none');
+
+                if (data.detected && Array.isArray(data.products) && data.products.length > 0) {
+                    aiDetectedProducts = data.products.map((p, i) => ({
+                        ...p, _id: 'ai_' + i, _status: 'pending'
+                    }));
+                } else {
+                    aiDetectedProducts = false;
+                }
+                break; // done
+            } catch (err) {
+                console.warn('[AI detect] Attempt', attempt + 1, 'failed:', err.message || err);
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+                    continue;
+                }
+                aiDetectedProducts = false;
+            }
+        }
+
+        renderAiDetectSection();
+    }
+
+    function renderAiDetectSection() {
+        const section = document.getElementById('aiDetectSection');
+        if (!section) return;
+
+        // If no photo, hide the whole section
+        if (!photoUrl) {
+            section.style.display = 'none';
+            return;
+        }
+
+        // Loading state
+        if (aiDetectedProducts === 'loading') {
+            section.style.display = 'block';
+            section.innerHTML = `
+                <div class="ai-detect-banner ai-detect-banner-loading">
+                    <div class="spinner"></div>
+                    <span>Détection IA des produits en cours&hellip;</span>
+                </div>`;
+            return;
+        }
+
+        // Failed or empty
+        if (!aiDetectedProducts || aiDetectedProducts === false) {
+            section.style.display = 'none';
+            return;
+        }
+
+        // Only show products still pending
+        const pending = aiDetectedProducts.filter(p => p._status === 'pending');
+        if (pending.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        const totalLabel = pending.length === 1 ? '1 produit détecté' : `${pending.length} produits détectés`;
+
+        let cardsHtml = '';
+        pending.forEach(p => {
+            const dimsSrc = p.dimensions_source || 'ai_estimate';
+            let dimsBadgeHtml;
+            if (dimsSrc === 'community_verified') {
+                dimsBadgeHtml = '<span class="badge-dims badge-dims-community">✅ Vérifié communauté</span>';
+            } else if (dimsSrc === 'ai_calibrated') {
+                dimsBadgeHtml = '<span class="badge-dims badge-dims-calibrated">📏 Calibré IA</span>';
+            } else {
+                dimsBadgeHtml = '<span class="badge-dims badge-dims-estimate">🤖 Estimé IA</span>';
+            }
+            cardsHtml += `<div class="ai-product-card" id="aip-${p._id}">
+                <div style="min-width:0">
+                    <div class="ai-product-name"><span class="badge-ia">✦ IA</span> ${escHtml(p.name)}</div>
+                    <div class="ai-product-meta">${p.estimated_count} unité${p.estimated_count > 1 ? 's' : ''} &middot; Niveau ${p.shelf_level}</div>
+                    <div class="ai-dims-row">
+                        <div class="ai-dims-label">${dimsBadgeHtml}&nbsp;<span style="font-weight:400;color:var(--slate-400);font-size:0.62rem">modifiables</span></div>
+                        <div class="ai-dims-inputs">
+                            <input type="number" class="ai-dim-input" id="aip-${p._id}-w" value="${p.width}" min="0.5" max="50" step="0.5" title="Largeur (cm)">
+                            <span class="ai-dims-sep">&times;</span>
+                            <input type="number" class="ai-dim-input" id="aip-${p._id}-h" value="${p.height}" min="0.5" max="50" step="0.5" title="Hauteur (cm)">
+                            <span class="ai-dims-sep">&times;</span>
+                            <input type="number" class="ai-dim-input" id="aip-${p._id}-d" value="${p.depth}" min="0.5" max="30" step="0.5" title="Profondeur (cm)">
+                            <span class="ai-dims-unit">cm</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-product-actions">
+                    <button class="btn-confirm-ai" onclick="confirmAiProduct('${p._id}')">Ajouter</button>
+                    <button class="btn-dismiss-ai" title="Ignorer" onclick="dismissAiProduct('${p._id}')">&times;</button>
+                </div>
+            </div>`;
+        });
+
+        section.style.display = 'block';
+        section.innerHTML = `
+            <div class="ai-detect-banner ai-detect-banner-success" style="margin-bottom:0.75rem;">
+                <span>🤖</span>
+                <span><strong>${totalLabel} par IA</strong> &mdash; Confirmez ou ignorez chacun.</span>
+            </div>
+            <div class="ai-detected-header">
+                <h4>🔍 Produits détectés par IA</h4>
+                <div class="ai-detected-actions">
+                    <button class="btn-confirm-all-ai" onclick="confirmAllAiProducts()">Tout ajouter</button>
+                    <button class="btn-dismiss-all-ai" onclick="dismissAllAiProducts()">Tout ignorer</button>
+                </div>
+            </div>
+            <div class="ai-detected-list">${cardsHtml}</div>
+            <div class="ai-divider">ou via import / saisie manuelle</div>`;
+    }
+
+    async function confirmAiProduct(aiId) {
+        const p = aiDetectedProducts && aiDetectedProducts.find(x => x._id === aiId);
+        if (!p) return;
+
+        // Mark as confirmed optimistically
+        p._status = 'confirmed';
+        const card = document.getElementById('aip-' + aiId);
+        if (card) card.classList.add('confirmed');
+
+        try {
+            // Read potentially-edited dimension values from inline inputs
+            const wInput = document.getElementById('aip-' + aiId + '-w');
+            const hInput = document.getElementById('aip-' + aiId + '-h');
+            const dInput = document.getElementById('aip-' + aiId + '-d');
+            const finalWidth  = wInput ? (parseFloat(wInput.value)  || p.width)  : p.width;
+            const finalHeight = hInput ? (parseFloat(hInput.value)  || p.height) : p.height;
+            const finalDepth  = dInput ? (parseFloat(dInput.value)  || p.depth)  : p.depth;
+
+            const res = await fetch(`/api/projects/${projectId}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: p.name,
+                    quantity: p.estimated_count,
+                    width: finalWidth,
+                    height: finalHeight,
+                    depth: finalDepth,
+                    priority: 'medium'
+                })
+            });
+            const product = await res.json();
+            product._imageLoading = true;
+            product._ai_detected = true;
+            product._dimensions_source = p.dimensions_source || 'ai_estimate';
+            products.push(product);
+            renderProductList();
+            pollProductImageOnce(product.id, 8000);
+            showToast(`${p.name} ajouté !`);
+        } catch (err) {
+            console.error('Failed to add AI product:', err);
+            p._status = 'pending';
+        }
+
+        // Re-render the section (removes confirmed cards)
+        setTimeout(() => renderAiDetectSection(), 400);
+    }
+
+    function dismissAiProduct(aiId) {
+        const p = aiDetectedProducts && aiDetectedProducts.find(x => x._id === aiId);
+        if (!p) return;
+        p._status = 'dismissed';
+        renderAiDetectSection();
+    }
+
+    async function confirmAllAiProducts() {
+        if (!aiDetectedProducts) return;
+        const pending = aiDetectedProducts.filter(p => p._status === 'pending');
+        for (const p of pending) {
+            await confirmAiProduct(p._id);
+        }
+    }
+
+    function dismissAllAiProducts() {
+        if (!aiDetectedProducts) return;
+        aiDetectedProducts.forEach(p => { if (p._status === 'pending') p._status = 'dismissed'; });
+        renderAiDetectSection();
+    }
+
+    // ========== STEP 1: PHOTO ==========
+    async function handlePhotoSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            photoUrl = ev.target.result;
+            document.getElementById('photoPreview').src = photoUrl;
+            document.getElementById('photoPreview').style.display = 'block';
+            document.getElementById('photoPlaceholder').style.display = 'none';
+            document.getElementById('photoReplaceBtn').style.display = 'block';
+            document.getElementById('photoUpload').classList.add('has-photo');
+            document.getElementById('step1Next').disabled = false;
+            document.getElementById('step1Next').textContent = 'Continuer avec la photo';
+        };
+        reader.readAsDataURL(file);
+
+        // Kick off AI analysis in background — don't await, never blocks
+        aiEstimates = null;
+        analyzeShelfPhoto(file);
+
+        if (projectId) {
+            const formData = new FormData();
+            formData.append('photo', file);
+            try {
+                await fetch(`/api/projects/${projectId}/photo`, { method: 'POST', body: formData });
+            } catch (err) {
+                console.error('Photo upload failed:', err);
+            }
+        }
+    }
+    function skipPhoto() { photoUrl = null; nextStep(); }
+
+    // ========== STEP 2: DIMENSIONS ==========
+    async function saveDimensionsAndNext() {
+        const w = parseFloat(document.getElementById('shelfWidth').value);
+        const h = parseFloat(document.getElementById('shelfHeight').value);
+        const d = parseFloat(document.getElementById('shelfDepth').value);
+        const ns = parseInt(document.getElementById('numShelves').value);
+        const nc = parseInt(document.getElementById('numSections').value);
+        if (!w || !h || !d) { alert('Veuillez saisir toutes les dimensions du rayon'); return; }
+        try {
+            await fetch(`/api/projects/${projectId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shelf_width: w, shelf_height: h, shelf_depth: d, num_shelves: ns, num_sections: nc })
+            });
+        } catch (err) {
+            console.error('Save dimensions failed:', err);
+        }
+        nextStep();
+    }
+
+    // ========== STEP 3: CATEGORY ==========
+    function selectCategory(el, cat) {
+        document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedCategory = cat;
+        document.getElementById('step3Next').disabled = false;
+    }
+    async function saveCategoryAndNext() {
+        if (!selectedCategory) return;
+        try {
+            await fetch(`/api/projects/${projectId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: selectedCategory })
+            });
+        } catch (err) {
+            console.error('Save category failed:', err);
+        }
+        nextStep();
+    }
+
+    // ========== STEP 4: PRODUCTS ==========
+    async function addProduct() {
+        const name = document.getElementById('prodName').value.trim();
+        const qty = parseInt(document.getElementById('prodQty').value) || 1;
+        const width = parseFloat(document.getElementById('prodWidth').value);
+        const height = parseFloat(document.getElementById('prodHeight').value);
+        const depth = parseFloat(document.getElementById('prodDepth').value);
+        const priority = document.getElementById('prodPriority').value;
+        if (!name) { document.getElementById('prodName').focus(); return; }
+        if (!width || !height || !depth) { alert('Veuillez saisir les dimensions du produit (largeur, hauteur, profondeur en cm)'); return; }
+        try {
+            const res = await fetch(`/api/projects/${projectId}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, quantity: qty, width, height, depth, priority })
+            });
+            const product = await res.json();
+            product._imageLoading = true; // show spinner while BDPM search runs async
+            products.push(product);
+            renderProductList();
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodQty').value = '';
+            document.getElementById('prodWidth').value = '';
+            document.getElementById('prodHeight').value = '';
+            document.getElementById('prodDepth').value = '';
+            document.getElementById('prodPriority').value = 'medium';
+            document.getElementById('prodName').focus();
+            // Poll for auto-fetched image — give BDPM search ~8s to complete
+            pollProductImageOnce(product.id, 8000);
+        } catch (err) {
+            console.error('Add product failed:', err);
+        }
+    }
+    async function removeProduct(id) {
+        try {
+            await fetch(`/api/products/${id}`, { method: 'DELETE' });
+            products = products.filter(p => p.id !== id);
+            renderProductList();
+        } catch (err) {
+            console.error('Delete product failed:', err);
+        }
+    }
+    function renderProductList() {
+        const container = document.getElementById('productList');
+        const nextBtn = document.getElementById('step4Next');
+        if (products.length === 0) {
+            container.innerHTML = '<div class="empty-state" id="emptyProducts"><div class="empty-state-icon">&#128230;</div><p>Aucun produit ajout&eacute;</p></div>';
+            nextBtn.disabled = true;
+            return;
+        }
+        nextBtn.disabled = false;
+        let html = '<div class="product-list">';
+        products.forEach(p => {
+            const pLabel = priorityLabels[p.priority] || p.priority;
+            // Thumbnail / image indicator
+            let thumbHtml;
+            if (p._imageLoading) {
+                thumbHtml = `<div class="product-item-thumb" title="Recherche d'image en cours..." onclick="triggerProductImageUpload('${p.id}')">
+                    <div class="product-item-thumb-loading"></div>
+                    <div class="product-item-thumb-overlay">📷</div>
+                </div>`;
+            } else if (p.image_url) {
+                const badgeClass = p.image_source === 'manual' ? 'manual' : '';
+                const badgeLabel = p.image_source === 'bdpm' ? 'Auto' : 'Manuel';
+                thumbHtml = `<div class="product-item-thumb" title="Cliquer pour changer la photo" onclick="triggerProductImageUpload('${p.id}')">
+                    <img src="${p.image_url}" alt="${escHtml(p.name)}" loading="lazy">
+                    <div class="product-item-thumb-overlay">📷</div>
+                </div>`;
+                // Append badge in info section — done below
+                p._badgeHtml = `<span class="image-source-badge ${badgeClass}">${badgeLabel}</span>`;
+            } else {
+                thumbHtml = `<div class="product-item-thumb" title="Ajouter une photo" onclick="triggerProductImageUpload('${p.id}')">
+                    <div class="product-item-thumb-placeholder">📦</div>
+                    <div class="product-item-thumb-overlay">📷</div>
+                </div>`;
+                p._badgeHtml = '';
+            }
+            const sourceBadge = p._badgeHtml || '';
+            const aiDetectedBadge = p._ai_detected ? ' <span class="badge-ia" style="font-size:0.58rem;vertical-align:middle;">✦ IA</span>' : '';
+            // Stock enrichment badges
+            let stockBadge = '';
+            if (p._stock_enriched) {
+                if (p._is_rupture) {
+                    stockBadge = ' <span class="stock-badge-rupture" style="vertical-align:middle;">⚠️ Rupture</span>';
+                } else if (p._is_surstock) {
+                    stockBadge = ' <span class="stock-badge-surstock" style="vertical-align:middle;">📈 Surstock</span>';
+                } else {
+                    stockBadge = ' <span class="stock-badge-realtime" style="vertical-align:middle;">⚡ Temps réel</span>';
+                }
+            }
+            const stockSalesBadge = p._stock_enriched && p._weekly_sales > 0 ? ` <span style="font-size:0.68rem;color:var(--slate-400)">${p._weekly_sales}/sem.</span>` : '';
+            let dimsSrcBadge = '';
+            if (p._ai_detected && p._dimensions_source) {
+                if (p._dimensions_source === 'community_verified') {
+                    dimsSrcBadge = ' <span class="badge-dims badge-dims-community" style="vertical-align:middle;">✅ Vérifié</span>';
+                } else if (p._dimensions_source === 'ai_calibrated') {
+                    dimsSrcBadge = ' <span class="badge-dims badge-dims-calibrated" style="vertical-align:middle;">📏 Calibré</span>';
+                } else {
+                    dimsSrcBadge = ' <span class="badge-dims badge-dims-estimate" style="vertical-align:middle;">🤖 Estimé</span>';
+                }
+            }
+            html += `<div class="product-item" id="pitem-${p.id}">
+                ${thumbHtml}
+                <div class="product-item-info">
+                    <h4>${escHtml(p.name)}${aiDetectedBadge}${sourceBadge}${stockBadge}</h4>
+                    <div class="product-item-meta">${p.quantity} unités${stockSalesBadge} &middot; ${p.width}&times;${p.height}&times;${p.depth} cm${dimsSrcBadge} <span class="priority-badge ${p.priority}">${escHtml(pLabel)}</span></div>
+                </div>
+                <div class="product-item-actions">
+                    <button class="btn btn-danger" style="padding:0.35rem 0.65rem;font-size:0.75rem;" onclick="removeProduct('${p.id}')">Supprimer</button>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ========== PRODUCT IMAGE UPLOAD ==========
+    let _currentImageProductId = null;
+
+    function triggerProductImageUpload(productId) {
+        _currentImageProductId = productId;
+        document.getElementById('productImageInput').value = '';
+        document.getElementById('productImageInput').click();
+    }
+
+    async function handleProductImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file || !_currentImageProductId) return;
+        const pid = _currentImageProductId;
+        _currentImageProductId = null;
+
+        // Show loading state
+        const prod = products.find(p => p.id === pid);
+        if (prod) { prod._imageLoading = true; renderProductList(); }
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            const res = await fetch(`/api/products/${pid}/image`, { method: 'POST', body: formData });
+            if (!res.ok) { showToast('Échec de l\'upload d\'image'); return; }
+            const data = await res.json();
+            if (prod) {
+                prod.image_url = data.image_url;
+                prod.image_source = data.source;
+                prod._imageLoading = false;
+                renderProductList();
+                showToast('Photo ajoutée !');
+            }
+        } catch (err) {
+            if (prod) { prod._imageLoading = false; renderProductList(); }
+            showToast('Erreur lors de l\'upload');
+        }
+    }
+
+    // Poll for auto-fetched image after a short delay (BDPM search is async)
+    async function pollProductImageOnce(productId, delayMs) {
+        if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
+        try {
+            const res = await fetch(`/api/products/${productId}/image`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.image_url) {
+                const prod = products.find(p => p.id === productId);
+                if (prod && !prod.image_url) {
+                    prod.image_url = data.image_url;
+                    prod.image_source = data.source;
+                    prod._imageLoading = false;
+                    renderProductList();
+                }
+            } else {
+                // Mark loading done even if no image found
+                const prod = products.find(p => p.id === productId);
+                if (prod && prod._imageLoading) {
+                    prod._imageLoading = false;
+                    renderProductList();
+                }
+            }
+        } catch {
+            const prod = products.find(p => p.id === productId);
+            if (prod && prod._imageLoading) { prod._imageLoading = false; renderProductList(); }
+        }
+    }
+
+    // ========== STEP 5: PLANOGRAM ==========
+    async function generatePlanogram() {
+        goToStep(5);
+        try {
+            // Pass stock context if agent is connected
+            const body = {};
+            if (stockWizardContext && stockWizardContext.connected && stockWizardContext.products && stockWizardContext.products.length > 0) {
+                body.stock_context = stockWizardContext.products.map(p => ({
+                    cip_code: p.cip_code,
+                    label: p.label,
+                    quantity_on_hand: p.quantity_on_hand,
+                    weekly_sales: p.weekly_sales,
+                    is_rupture: p.is_rupture,
+                    is_surstock: p.is_surstock
+                }));
+            }
+            const res = await fetch(`/api/projects/${projectId}/generate`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (data.error) {
+                document.getElementById('planogramVisual').innerHTML = `<div class="empty-state"><p style="color: var(--red);">${escHtml(data.error)}</p></div>`;
+                return;
+            }
+            currentPlanogram = data;
+            renderPlanogramStats(data.summary);
+            renderPlanogramSVG(data);
+            renderNotPlaced(data.summary.not_placed);
+            renderStockPlanogramAlerts();
+            activateShareButtons();
+            track('wizard_completed', {
+              num_products: products.length,
+              num_placed: data.summary ? data.summary.products_placed : 0
+            });
+            if (photoUrl) {
+                document.getElementById('refPhoto').src = photoUrl;
+                document.getElementById('photoRef').style.display = 'block';
+                document.getElementById('planogramLayout').classList.remove('no-photo');
+            } else {
+                document.getElementById('photoRef').style.display = 'none';
+                document.getElementById('planogramLayout').classList.add('no-photo');
+            }
+        } catch (err) {
+            console.error('Generate failed:', err);
+            document.getElementById('planogramVisual').innerHTML = '<div class="empty-state"><p style="color: var(--red);">Échec de la génération du planogramme. Veuillez réessayer.</p></div>';
+        }
+    }
+    function renderPlanogramStats(summary) {
+        document.getElementById('planogramStats').innerHTML = `
+            <div class="stat-card"><div class="stat-value">${summary.total_products}</div><div class="stat-label">Total produits</div></div>
+            <div class="stat-card"><div class="stat-value">${summary.products_placed}</div><div class="stat-label">Produits placés</div></div>
+            <div class="stat-card"><div class="stat-value">${summary.total_facings}</div><div class="stat-label">Total facings</div></div>
+            <div class="stat-card"><div class="stat-value">${summary.utilization_percent}%</div><div class="stat-label">Utilisation du rayon</div></div>
+        `;
+    }
+    function renderPlanogramSVG(planogram) {
+        const { shelves, dimensions } = planogram;
+        const { shelf_width, num_shelves, shelf_unit_height } = dimensions;
+
+        // ── Layout constants ──────────────────────────────────────────────
+        const padding   = 45;
+        const labelWidth = 100;
+        const scale      = Math.min(6.5, 720 / shelf_width);
+        const depthBadgeH = 13; // px reserved at shelf bottom for "×NP" text
+        const shelfGap    = 2;  // px between shelves
+
+        const svgWidth  = shelf_width * scale + padding * 2 + labelWidth;
+        const svgHeight = num_shelves * (shelf_unit_height * scale + shelfGap) + padding * 2 + 42;
+
+        // ── Per-product color palette (consistent across shelves) ──────────
+        const palette = [
+            '#0D9488','#3B82F6','#8B5CF6','#EC4899','#EF4444',
+            '#F97316','#10B981','#06B6D4','#FBBF24','#84CC16',
+            '#6366F1','#14B8A6','#F43F5E','#A855F7','#0EA5E9'
+        ];
+        const productColorMap = {};
+        let colorIdx = 0;
+        shelves.forEach(shelf => {
+            shelf.items.forEach(item => {
+                const pid = String(item.product_id || item.id || item.name);
+                if (!productColorMap[pid]) {
+                    productColorMap[pid] = palette[colorIdx % palette.length];
+                    colorIdx++;
+                }
+            });
+        });
+
+        // ── SVG scaffold ──────────────────────────────────────────────────
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width:100%;height:auto;">`;
+        svg += `<rect width="${svgWidth}" height="${svgHeight}" fill="#F1F5F9" rx="8"/>`;
+        svg += `<text x="${svgWidth/2}" y="27" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#0F172A">Disposition du rayon \u2014 ${shelf_width}\u00d7${Math.round(shelf_unit_height * num_shelves)} cm, ${num_shelves} \u00e9tag\u00e8re${num_shelves > 1 ? 's' : ''}</text>`;
+
+        const startX = padding + labelWidth;
+        const startY = padding;
+        const shelfUnitPx = shelf_unit_height * scale + shelfGap;
+
+        // ── Draw shelves ──────────────────────────────────────────────────
+        shelves.forEach((shelf, i) => {
+            const y      = startY + i * shelfUnitPx;
+            const shelfH = shelf_unit_height * scale;
+            // Usable height for product boxes (reserve bottom strip for depth badges)
+            const innerH = shelfH - depthBadgeH - 2;
+
+            // Shelf background
+            svg += `<rect x="${startX}" y="${y}" width="${shelf_width * scale}" height="${shelfH}" fill="${shelf.isEyeLevel ? '#ECFDF5' : '#FAFAFA'}" stroke="#D1D5DB" stroke-width="0.75"/>`;
+
+            // Eye-level marker
+            if (shelf.isEyeLevel) {
+                svg += `<text x="${startX - 5}" y="${y + 12}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7.5" fill="#0D9488" font-weight="700">NIV.</text>`;
+                svg += `<text x="${startX - 5}" y="${y + 21}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7.5" fill="#0D9488" font-weight="700">YEUX</text>`;
+            }
+
+            // Shelf label + product count
+            const totalUnits = shelf.items.reduce((s, it) => s + it.facings * (it.stack || 1) * (it.depth || 1), 0);
+            svg += `<text x="${startX - 5}" y="${y + shelfH/2 - 5}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="9.5" font-weight="700" fill="#1E293B">Rayon ${i + 1}</text>`;
+            svg += `<text x="${startX - 5}" y="${y + shelfH/2 + 8}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7.5" fill="#64748B">${totalUnits} produits</text>`;
+
+            // ── Draw products ──────────────────────────────────────────────
+            let xOffset = 0;
+            shelf.items.forEach(item => {
+                const pid          = String(item.product_id || item.id || item.name);
+                const productColor = productColorMap[pid] || '#94A3B8';
+                const facingCount  = item.facings || 1;
+                const stackCount   = item.stack   || 1;
+                const depth        = item.depth   || 1;
+                const fW           = item.width * scale;          // pixel width per facing
+                const sH           = Math.max(8, (innerH - (stackCount - 1)) / stackCount); // box height per stack row
+
+                for (let f = 0; f < facingCount; f++) {
+                    const facingX = startX + (xOffset + f * item.width) * scale;
+                    const boxW    = Math.max(4, fW - 1);
+
+                    // ── Depth badge at bottom of this facing column ──
+                    if (depth > 1) {
+                        svg += `<text x="${facingX + fW/2}" y="${y + shelfH - 2}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="6.5" font-weight="700" fill="${productColor}">\u00d7${depth}P</text>`;
+                    }
+
+                    // ── Stack rows (s=0 = bottom row) ──
+                    for (let s = 0; s < stackCount; s++) {
+                        const boxH   = Math.max(4, sH - 1);
+                        const finalBoxY = y + innerH - (s + 1) * sH;
+
+                        // Check if image_url is a real raster image (not SVG data URL which won't render inside SVG <image>)
+                        const hasRealImage = item.image_url && !item.image_url.startsWith('data:image/svg') && boxW > 10 && boxH > 10;
+
+                        if (hasRealImage) {
+                            // ── Product WITH raster packshot ──────────────────
+                            svg += `<rect x="${facingX + 0.5}" y="${finalBoxY}" width="${boxW}" height="${boxH}" fill="white" stroke="${productColor}" stroke-width="1" rx="1"/>`;
+                            svg += `<image href="${item.image_url}" x="${facingX + 1.5}" y="${finalBoxY + 1}" width="${boxW - 2}" height="${boxH - 2}" preserveAspectRatio="xMidYMid meet"/>`;
+                            // Name label strip at bottom of first column bottom row
+                            if (f === 0 && s === 0 && boxH > 18 && boxW > 18) {
+                                const labelH  = Math.min(14, boxH * 0.35);
+                                const barY    = finalBoxY + boxH - labelH;
+                                svg += `<rect x="${facingX + 0.5}" y="${barY}" width="${boxW}" height="${labelH}" fill="${productColor}" opacity="0.88" rx="0"/>`;
+                                const maxC    = Math.max(2, Math.floor(fW * facingCount / 5.5));
+                                const dName   = item.name.length > maxC ? item.name.substring(0, maxC - 1) + '.' : item.name;
+                                const fs      = Math.min(8, Math.max(5.5, fW * facingCount / Math.max(dName.length, 3) * 0.55));
+                                svg += `<text x="${facingX + fW * facingCount / 2}" y="${barY + labelH - 2}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="${fs}" fill="white" font-weight="600">${escSvg(dName)}</text>`;
+                            }
+                        } else {
+                            // ── Product styled packshot box (colored with initial + name) ────
+                            // Gradient-style box with product initial for a professional look
+                            const initial = item.name ? item.name.charAt(0).toUpperCase() : '?';
+                            svg += `<rect x="${facingX + 0.5}" y="${finalBoxY}" width="${boxW}" height="${boxH}" fill="${productColor}" stroke="rgba(255,255,255,0.6)" stroke-width="0.75" rx="2"/>`;
+                            // White circle with initial (only if box is big enough)
+                            if (boxW > 12 && boxH > 16) {
+                                const circR = Math.min(boxW * 0.28, boxH * 0.22, 12);
+                                const circCx = facingX + 0.5 + boxW / 2;
+                                const circCy = finalBoxY + boxH * 0.38;
+                                svg += `<circle cx="${circCx}" cy="${circCy}" r="${circR}" fill="rgba(255,255,255,0.25)"/>`;
+                                const initFs = Math.min(circR * 1.2, 11);
+                                svg += `<text x="${circCx}" y="${circCy + initFs * 0.35}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="${initFs}" fill="white" font-weight="700">${escSvg(initial)}</text>`;
+                            }
+                            // Name at bottom of first facing, bottom row
+                            if (f === 0 && s === 0 && boxW > 14 && boxH > 10) {
+                                const maxC  = Math.max(2, Math.floor(fW * facingCount / 5));
+                                const dName = item.name.length > maxC ? item.name.substring(0, maxC - 1) + '.' : item.name;
+                                const fs    = Math.min(8.5, Math.max(5.5, fW * facingCount / Math.max(dName.length, 3) * 0.6));
+                                svg += `<text x="${facingX + fW * facingCount / 2}" y="${finalBoxY + boxH - 3}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="${fs}" fill="white" font-weight="600">${escSvg(dName)}</text>`;
+                            }
+                            // Stack count hint on top row (only when stacked)
+                            if (s === stackCount - 1 && stackCount > 1 && boxW > 14) {
+                                svg += `<text x="${facingX + fW/2}" y="${finalBoxY + 7}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="6" fill="rgba(255,255,255,0.75)">\u00d7${stackCount}H</text>`;
+                            }
+                        }
+                    }
+                }
+                // ── Stock flags (rupture / surstock) ──────────────
+                if (item._is_rupture && item.facings > 0) {
+                    const flagX = startX + xOffset * scale;
+                    const flagW = item.width * scale * item.facings;
+                    // Red diagonal cross pattern over the whole product area
+                    svg += `<rect x="${flagX + 0.5}" y="${y + 1}" width="${flagW - 1}" height="${innerH - 1}" fill="rgba(239,68,68,0.15)" stroke="#EF4444" stroke-width="1" stroke-dasharray="3,2" rx="1"/>`;
+                    if (flagW > 18 && innerH > 14) {
+                        svg += `<text x="${flagX + flagW/2}" y="${y + innerH/2 + 4}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="7.5" font-weight="700" fill="#DC2626">⚠️ Rupture</text>`;
+                    }
+                } else if (item._is_surstock && item.facings > 0) {
+                    const flagX = startX + xOffset * scale;
+                    const flagW = item.width * scale * item.facings;
+                    if (flagW > 14) {
+                        svg += `<text x="${flagX + flagW/2}" y="${y + 8}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="6.5" font-weight="700" fill="#D97706">▲ S</text>`;
+                    }
+                }
+                xOffset += item.totalWidth;
+            });
+
+            // Shelf floor (thick plank)
+            svg += `<line x1="${startX}" y1="${y + shelfH}" x2="${startX + shelf_width * scale}" y2="${y + shelfH}" stroke="#475569" stroke-width="2.5"/>`;
+        });
+
+        // Outer frame
+        const frameH = num_shelves * shelfUnitPx - shelfGap;
+        svg += `<rect x="${startX}" y="${startY}" width="${shelf_width * scale}" height="${frameH}" fill="none" stroke="#1E293B" stroke-width="1.5"/>`;
+
+        // ── Product legend at bottom ───────────────────────────────────────
+        const legendY = svgHeight - 22;
+        svg += `<text x="${startX}" y="${legendY - 8}" font-family="DM Sans, sans-serif" font-size="8" fill="#94A3B8">L\u00e9gende :</text>`;
+        const legendProducts = [];
+        shelves.forEach(shelf => shelf.items.forEach(item => {
+            const pid = String(item.product_id || item.id || item.name);
+            if (!legendProducts.find(lp => lp.pid === pid)) legendProducts.push({ pid, name: item.name, color: productColorMap[pid] });
+        }));
+        let lx = startX + 52;
+        legendProducts.slice(0, 7).forEach(lp => {
+            svg += `<rect x="${lx}" y="${legendY - 10}" width="9" height="9" fill="${lp.color}" rx="1.5"/>`;
+            const nm = lp.name.length > 16 ? lp.name.substring(0, 15) + '.' : lp.name;
+            svg += `<text x="${lx + 12}" y="${legendY - 2}" font-family="DM Sans, sans-serif" font-size="7.5" fill="#475569">${escSvg(nm)}</text>`;
+            lx += Math.max(68, nm.length * 5 + 20);
+            if (lx > svgWidth - 60) return;
+        });
+        svg += `<text x="${svgWidth - padding + 5}" y="${legendY - 2}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="7" fill="#94A3B8">L=Largeur P=Profondeur H=Hauteur</text>`;
+
+        svg += '</svg>';
+        document.getElementById('planogramVisual').innerHTML = svg;
+    }
+    function renderNotPlaced(notPlaced) {
+        const section = document.getElementById('notPlacedSection');
+        if (!notPlaced || notPlaced.length === 0) { section.innerHTML = ''; return; }
+        let html = '<div class="not-placed-warning"><h4>Produits non placés</h4><ul>';
+        notPlaced.forEach(p => { html += `<li><strong>${escHtml(p.name)}</strong> - ${escHtml(p.reason)}</li>`; });
+        html += '</ul></div>';
+        section.innerHTML = html;
+    }
+    function startNewProject() {
+        if (confirm('Démarrer un nouveau projet ? Votre planogramme actuel est sauvegardé dans Mes planogrammes.')) {
+            window.location.href = '/app';
+        }
+    }
+    function escHtml(s) { const div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
+    function escSvg(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    // ========== CSV/EXCEL IMPORT ==========
+    let importPreviewRows = [];
+
+    const PRIORITY_VALID = ['high', 'medium', 'low'];
+    const PRIORITY_MAP = {
+        'high': 'high', 'haute': 'high', 'élevée': 'high', 'elevee': 'high', 'haut': 'high',
+        'medium': 'medium', 'moyenne': 'medium', 'moyen': 'medium', 'med': 'medium',
+        'low': 'low', 'basse': 'low', 'bas': 'low', 'faible': 'low'
+    };
+
+    function downloadTemplate() {
+        const header = 'product_name,quantity,priority,width_cm,height_cm,depth_cm';
+        const rows = [
+            'Doliprane 500mg,24,high,8,12,4',
+            'Ibuprofène 200mg,18,medium,9,11,3',
+            'Vitamine C 1000mg,12,low,7,10,3',
+            'Smecta sachets,30,medium,8,14,4',
+            'Ventoline inhalateur,8,high,5,15,4'
+        ];
+        const csv = [header, ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'shelfrx_modele_produits.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Modèle téléchargé !');
+    }
+
+    function handleImportFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        // Reset the input so the same file can be re-selected
+        e.target.value = '';
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'csv') {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const result = Papa.parse(ev.target.result, { header: true, skipEmptyLines: true });
+                    processImportRows(result.data);
+                } catch (err) {
+                    showToast('Erreur de lecture du fichier CSV.');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        } else if (ext === 'xlsx' || ext === 'xls') {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const data = new Uint8Array(ev.target.result);
+                    const wb = XLSX.read(data, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                    processImportRows(rows);
+                } catch (err) {
+                    showToast('Erreur de lecture du fichier Excel.');
+                    console.error(err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            showToast('Format non supporté. Utilisez .csv ou .xlsx');
+        }
+    }
+
+    function normalizeKey(k) {
+        return String(k).toLowerCase().trim()
+            .replace(/[\s_\-\.]+/g, '_')
+            .replace(/[éèê]/g, 'e')
+            .replace(/[àâ]/g, 'a')
+            .replace(/[ùû]/g, 'u')
+            .replace(/[ôo]/g, 'o');
+    }
+
+    function findCol(row, aliases) {
+        const keys = Object.keys(row);
+        for (const alias of aliases) {
+            const match = keys.find(k => normalizeKey(k) === alias);
+            if (match !== undefined) return row[match];
+        }
+        return '';
+    }
+
+    function processImportRows(rawRows) {
+        if (!rawRows || rawRows.length === 0) {
+            showToast('Fichier vide ou format invalide.');
+            return;
+        }
+        importPreviewRows = rawRows.map((raw, idx) => {
+            const name = String(findCol(raw, ['product_name', 'nom_produit', 'nom', 'name', 'produit', 'product']) || '').trim();
+            const qtyRaw = findCol(raw, ['quantity', 'quantite', 'qty', 'stock', 'qte']);
+            const qty = parseInt(qtyRaw) || 1;
+            const priorityRaw = String(findCol(raw, ['priority', 'priorite', 'prio']) || 'medium').toLowerCase().trim();
+            const priority = PRIORITY_MAP[priorityRaw] || 'medium';
+            const widthRaw = findCol(raw, ['width_cm', 'width', 'largeur_cm', 'largeur', 'larg', 'w']);
+            const heightRaw = findCol(raw, ['height_cm', 'height', 'hauteur_cm', 'hauteur', 'haut', 'h']);
+            const depthRaw = findCol(raw, ['depth_cm', 'depth', 'profondeur_cm', 'profondeur', 'prof', 'd']);
+            const width = parseFloat(widthRaw) || 8;
+            const height = parseFloat(heightRaw) || 12;
+            const depth = parseFloat(depthRaw) || 4;
+            return { _idx: idx, name, quantity: qty, priority, width, height, depth };
+        }).filter(r => r.name.length > 0);
+
+        if (importPreviewRows.length === 0) {
+            showToast('Aucun produit trouvé. Vérifiez que la colonne "product_name" existe.');
+            return;
+        }
+        renderImportPreview();
+        document.getElementById('importPreviewModal').classList.add('open');
+    }
+
+    function renderImportPreview() {
+        const wrap = document.getElementById('previewTableWrap');
+        const countEl = document.getElementById('previewCount');
+        const confirmBtn = document.getElementById('confirmImportBtn');
+        if (importPreviewRows.length === 0) {
+            wrap.innerHTML = '<div class="preview-empty">Tous les produits ont été supprimés.</div>';
+            countEl.textContent = '0 produit';
+            confirmBtn.disabled = true;
+            return;
+        }
+        confirmBtn.disabled = false;
+        const n = importPreviewRows.length;
+        countEl.textContent = n + ' produit' + (n > 1 ? 's' : '') + ' à importer';
+
+        const pOptions = [
+            { v: 'high', l: 'Haute' },
+            { v: 'medium', l: 'Moyenne' },
+            { v: 'low', l: 'Basse' }
+        ];
+
+        let html = `<table class="preview-table">
+            <thead><tr>
+                <th>Nom du produit</th>
+                <th>Qté</th>
+                <th>Priorité</th>
+                <th>Larg.(cm)</th>
+                <th>Haut.(cm)</th>
+                <th>Prof.(cm)</th>
+                <th></th>
+            </tr></thead><tbody>`;
+
+        importPreviewRows.forEach((row, i) => {
+            const pSel = pOptions.map(o => `<option value="${o.v}"${row.priority === o.v ? ' selected' : ''}>${o.l}</option>`).join('');
+            html += `<tr>
+                <td><input class="td-input" style="min-width:140px" value="${escHtml(row.name)}" oninput="updatePreviewRow(${i},'name',this.value)"></td>
+                <td><input class="td-input" style="width:60px" type="number" min="1" value="${row.quantity}" oninput="updatePreviewRow(${i},'quantity',this.value)"></td>
+                <td><select class="td-select" style="min-width:90px" onchange="updatePreviewRow(${i},'priority',this.value)">${pSel}</select></td>
+                <td><input class="td-input" style="width:62px" type="number" min="0.5" step="0.5" value="${row.width}" oninput="updatePreviewRow(${i},'width',this.value)"></td>
+                <td><input class="td-input" style="width:62px" type="number" min="0.5" step="0.5" value="${row.height}" oninput="updatePreviewRow(${i},'height',this.value)"></td>
+                <td><input class="td-input" style="width:62px" type="number" min="0.5" step="0.5" value="${row.depth}" oninput="updatePreviewRow(${i},'depth',this.value)"></td>
+                <td><button class="btn btn-danger" style="padding:0.25rem 0.5rem; font-size:0.72rem;" onclick="removePreviewRow(${i})">✕</button></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
+    }
+
+    function updatePreviewRow(i, field, value) {
+        if (!importPreviewRows[i]) return;
+        if (field === 'quantity') importPreviewRows[i][field] = parseInt(value) || 1;
+        else if (['width','height','depth'].includes(field)) importPreviewRows[i][field] = parseFloat(value) || 1;
+        else importPreviewRows[i][field] = value;
+        // Update count label
+        const n = importPreviewRows.length;
+        document.getElementById('previewCount').textContent = n + ' produit' + (n > 1 ? 's' : '') + ' à importer';
+    }
+
+    function removePreviewRow(i) {
+        importPreviewRows.splice(i, 1);
+        renderImportPreview();
+    }
+
+    function closeImportModal() {
+        document.getElementById('importPreviewModal').classList.remove('open');
+        importPreviewRows = [];
+    }
+
+    async function confirmImport() {
+        const validRows = importPreviewRows.filter(r => r.name.trim().length > 0);
+        if (validRows.length === 0) {
+            showToast('Aucun produit valide à importer.');
+            return;
+        }
+        const confirmBtn = document.getElementById('confirmImportBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Importation...';
+
+        let added = 0;
+        let failed = 0;
+        for (const row of validRows) {
+            try {
+                const res = await fetch(`/api/projects/${projectId}/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: row.name.trim(),
+                        quantity: row.quantity,
+                        width: row.width,
+                        height: row.height,
+                        depth: row.depth,
+                        priority: row.priority
+                    })
+                });
+                if (res.ok) {
+                    const product = await res.json();
+                    product._imageLoading = true;
+                    products.push(product);
+                    // Poll for auto image with staggered delay to avoid hammering BDPM
+                    pollProductImageOnce(product.id, 8000 + added * 1000);
+                    added++;
+                } else {
+                    failed++;
+                }
+            } catch (err) {
+                console.error('Import row failed:', err);
+                failed++;
+            }
+        }
+        renderProductList();
+        closeImportModal();
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Ajouter tous les produits';
+        if (failed === 0) {
+            showToast(`✓ ${added} produit${added > 1 ? 's' : ''} importé${added > 1 ? 's' : ''} !`);
+        } else {
+            showToast(`${added} importés, ${failed} échoués.`);
+        }
+    }
+
+    // ========== SHARE & PNG DOWNLOAD ==========
+    let currentShareId = null;
+
+    async function copyShareLink() {
+        if (!projectId) {
+            showToast('Sauvegardez d\'abord le planogramme');
+            return;
+        }
+        try {
+            // Generate / get share_id
+            const res = await fetch(`/api/projects/${projectId}/share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device_id: getDeviceId() })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                showToast(data.error || 'Impossible de créer le lien');
+                return;
+            }
+            currentShareId = data.share_id;
+            const shareUrl = `${window.location.origin}/app/planogram/${data.share_id}`;
+            await navigator.clipboard.writeText(shareUrl);
+            track('planogram_shared', { share_id: currentShareId });
+            const btn = document.getElementById('copyLinkBtn');
+            if (btn) {
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn-secondary');
+                btn.textContent = 'Lien copié !';
+                setTimeout(() => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                    btn.textContent = 'Copier le lien';
+                }, 2500);
+            }
+            showToast('Lien copié dans le presse-papiers');
+        } catch (err) {
+            console.error('Share failed:', err);
+            showToast('Erreur lors de la création du lien');
+        }
+    }
+
+    async function downloadPlanogramPng() {
+        const visualEl = document.getElementById('planogramVisual');
+        if (!visualEl || !visualEl.querySelector('svg')) {
+            showToast('Générez d\'abord le planogramme');
+            return;
+        }
+        try {
+            showToast('Génération de l\'image...');
+            const canvas = await html2canvas(visualEl, {
+                scale: 2,
+                backgroundColor: '#FFFFFF',
+                useCORS: true,
+                logging: false
+            });
+            const link = document.createElement('a');
+            const name = document.getElementById('projectName').textContent || 'planogramme';
+            link.download = `shelfrx-${name.replace(/\s+/g, '-').substring(0, 30)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            track('planogram_exported', { format: 'png' });
+            showToast('PNG téléchargé !');
+        } catch (err) {
+            console.error('PNG export failed:', err);
+            showToast('Échec de l\'export PNG');
+        }
+    }
+
+    // Show share buttons after planogram is generated and project has an id
+    function activateShareButtons() {
+        const copyBtn = document.getElementById('copyLinkBtn');
+        const pngBtn = document.getElementById('downloadPngBtn');
+        if (copyBtn) copyBtn.style.display = 'inline-flex';
+        if (pngBtn) pngBtn.style.display = 'inline-flex';
+    }
+
+    // ========== DRAG & DROP PLANOGRAM EDITOR ==========
+
+    let _planoEditMode = false;
+    let _planoDragSrc = null;
+    let _planoPendingChanges = false;
+
+    function buildPlanogramColorMap(planogram) {
+        const palette = ['#0D9488','#3B82F6','#8B5CF6','#EC4899','#EF4444','#F97316','#10B981','#06B6D4','#FBBF24','#84CC16','#6366F1','#14B8A6','#F43F5E','#A855F7','#0EA5E9'];
+        const colorMap = {};
+        let idx = 0;
+        planogram.shelves.forEach(shelf => {
+            shelf.items.forEach(item => {
+                const pid = String(item.product_id || item.id || item.name);
+                if (!colorMap[pid]) { colorMap[pid] = palette[idx % palette.length]; idx++; }
+            });
+        });
+        return colorMap;
+    }
+
+    function startEditMode() {
+        if (!currentPlanogram) { showToast('Générez d\'abord un planogramme.'); return; }
+        _planoEditMode = true;
+        _planoPendingChanges = false;
+        renderPlanogramEditable(currentPlanogram);
+        const btn = document.getElementById('editModeBtn');
+        if (btn) btn.style.display = 'none';
+    }
+
+    function cancelEdit() {
+        _planoEditMode = false;
+        _planoDragSrc = null;
+        renderPlanogramSVG(currentPlanogram);
+        const btn = document.getElementById('editModeBtn');
+        if (btn) btn.style.display = '';
+    }
+
+    async function validatePlanogram() {
+        if (!projectId || !currentPlanogram) return;
+        const btn = document.getElementById('validatePlanogramBtn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Sauvegarde...'; }
+        try {
+            const res = await fetch(`/api/projects/${projectId}/planogram`, {
+                method: 'PATCH',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ planogram: currentPlanogram })
+            });
+            if (!res.ok) throw new Error('save failed');
+            _planoPendingChanges = false;
+            _planoEditMode = false;
+            _planoDragSrc = null;
+            renderPlanogramStats(currentPlanogram.summary);
+            renderPlanogramSVG(currentPlanogram);
+            const editBtn = document.getElementById('editModeBtn');
+            if (editBtn) editBtn.style.display = '';
+            showToast('✅ Disposition sauvegardée !');
+        } catch (err) {
+            console.error('Validate planogram error:', err);
+            showToast('Sauvegarde échouée. Réessayez.');
+            if (btn) { btn.disabled = false; btn.textContent = '✅ Valider le planogramme'; }
+        }
+    }
+
+    function renderPlanogramEditable(planogram) {
+        const colorMap = buildPlanogramColorMap(planogram);
+        const visualEl = document.getElementById('planogramVisual');
+
+        let html = '<div class="plano-edit-toolbar">';
+        html += '<span class="edit-hint">✏️ Glissez les produits pour réorganiser — entre étagères aussi. Sur mobile : appui long pour activer.</span>';
+        html += '<button class="btn btn-secondary" onclick="cancelEdit()" style="padding:0.35rem 0.75rem;font-size:0.8rem;white-space:nowrap;">✕ Annuler</button>';
+        html += '<button class="btn btn-primary" id="validatePlanogramBtn" onclick="validatePlanogram()" style="padding:0.35rem 0.875rem;font-size:0.8rem;white-space:nowrap;">✅ Valider le planogramme</button>';
+        html += '</div>';
+        html += '<div class="plano-editable" id="planoEditable">';
+
+        planogram.shelves.forEach((shelf, sIdx) => {
+            const eyeClass = shelf.isEyeLevel ? ' eye-level' : '';
+            html += `<div class="plano-shelf${eyeClass}" data-shelf-idx="${sIdx}">`;
+            html += `<div class="plano-shelf-label">Rayon ${sIdx + 1}${shelf.isEyeLevel ? ' <span class="eye-badge">NIV. YEUX</span>' : ''}</div>`;
+            html += `<div class="plano-items" data-shelf="${sIdx}" ondragover="planoDragOver(event)" ondragleave="planoDragLeave(event)" ondrop="planoDrop(event)">`;
+
+            if (shelf.items.length === 0) {
+                html += `<div style="padding:0.5rem 0.25rem;color:#94A3B8;font-size:0.8rem;font-style:italic;">Étagère vide — déposez un produit ici</div>`;
+            }
+
+            shelf.items.forEach((item, iIdx) => {
+                const pid = String(item.product_id || item.id || item.name);
+                const color = colorMap[pid] || '#94A3B8';
+                const facings = item.facings || 1;
+                const depth = item.depth || 1;
+                const stack = item.stack || 1;
+                const name = item.name || '?';
+                const dims = `×${facings}F${depth > 1 ? ' ·×'+depth+'P' : ''}${stack > 1 ? ' ·×'+stack+'H' : ''}`;
+                html += `<div class="plano-item" draggable="true" data-shelf="${sIdx}" data-idx="${iIdx}" data-pid="${escHtml(pid)}" `;
+                html += `ondragstart="planoDragStart(event)" ondragend="planoDragEnd(event)">`;
+                html += `<span class="drag-handle" aria-hidden="true">⠿</span>`;
+                html += `<span class="item-swatch" style="background:${color}"></span>`;
+                html += `<div class="item-body"><div class="item-name" title="${escHtml(name)}">${escHtml(name)}</div>`;
+                html += `<div class="item-dims">${escHtml(dims)}</div></div>`;
+                html += `</div>`;
+            });
+
+            html += '</div></div>';
+        });
+
+        html += '</div>';
+        visualEl.innerHTML = html;
+
+        // Attach touch handlers
+        document.querySelectorAll('.plano-item').forEach(el => attachTouchDrag(el));
+    }
+
+    // ── Desktop drag handlers ────────────────────────────────────────────────
+
+    function planoDragStart(e) {
+        const el = e.currentTarget;
+        _planoDragSrc = { shelfIdx: +el.dataset.shelf, itemIdx: +el.dataset.idx };
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify(_planoDragSrc));
+        setTimeout(() => el.classList.add('dragging'), 0);
+    }
+
+    function planoDragEnd(e) {
+        document.querySelectorAll('.plano-item').forEach(el => {
+            el.classList.remove('dragging', 'insert-before', 'insert-after');
+        });
+        document.querySelectorAll('.plano-items').forEach(el => el.classList.remove('drag-over'));
+    }
+
+    function planoDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const zone = e.currentTarget;
+        zone.classList.add('drag-over');
+
+        document.querySelectorAll('.plano-item').forEach(el => el.classList.remove('insert-before','insert-after'));
+        const target = e.target.closest('.plano-item');
+        if (target) {
+            const rect = target.getBoundingClientRect();
+            if (e.clientX < rect.left + rect.width / 2) {
+                target.classList.add('insert-before');
+            } else {
+                target.classList.add('insert-after');
+            }
+        }
+    }
+
+    function planoDragLeave(e) {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+            e.currentTarget.classList.remove('drag-over');
+            document.querySelectorAll('.plano-item.insert-before,.plano-item.insert-after').forEach(el => {
+                el.classList.remove('insert-before','insert-after');
+            });
+        }
+    }
+
+    function planoDrop(e) {
+        e.preventDefault();
+        const zone = e.currentTarget;
+        zone.classList.remove('drag-over');
+        if (!_planoDragSrc) return;
+
+        const toShelfIdx  = +zone.dataset.shelf;
+        const fromShelfIdx = _planoDragSrc.shelfIdx;
+        const fromItemIdx  = _planoDragSrc.itemIdx;
+
+        let toItemIdx = currentPlanogram.shelves[toShelfIdx].items.length;
+        const targetItem = e.target.closest('.plano-item');
+        if (targetItem && +targetItem.dataset.shelf === toShelfIdx) {
+            const rect = targetItem.getBoundingClientRect();
+            toItemIdx = +targetItem.dataset.idx;
+            if (e.clientX >= rect.left + rect.width / 2) toItemIdx++;
+        }
+
+        planoMoveItem(fromShelfIdx, fromItemIdx, toShelfIdx, toItemIdx);
+        _planoDragSrc = null;
+    }
+
+    function planoMoveItem(fromShelf, fromIdx, toShelf, toIdx) {
+        const item = currentPlanogram.shelves[fromShelf].items.splice(fromIdx, 1)[0];
+        let insertIdx = toIdx;
+        if (fromShelf === toShelf && fromIdx < toIdx) insertIdx = Math.max(0, insertIdx - 1);
+        insertIdx = Math.max(0, Math.min(insertIdx, currentPlanogram.shelves[toShelf].items.length));
+        currentPlanogram.shelves[toShelf].items.splice(insertIdx, 0, item);
+        _planoPendingChanges = true;
+        renderPlanogramEditable(currentPlanogram);
+    }
+
+    // ── Touch drag handlers ──────────────────────────────────────────────────
+
+    let _touchDragEl       = null;
+    let _touchLongPress    = null;
+    let _touchGhostEl      = null;
+    let _touchDragSrc      = null;
+    let _touchDragActive   = false;
+    let _touchStartX       = 0;
+    let _touchStartY       = 0;
+
+    function attachTouchDrag(el) {
+        el.addEventListener('touchstart',  onTouchStart,  { passive: false });
+        el.addEventListener('touchmove',   onTouchMove,   { passive: false });
+        el.addEventListener('touchend',    onTouchEnd);
+        el.addEventListener('touchcancel', onTouchCancel);
+    }
+
+    function onTouchStart(e) {
+        const el = e.currentTarget;
+        const t  = e.touches[0];
+        _touchStartX = t.clientX;
+        _touchStartY = t.clientY;
+
+        _touchLongPress = setTimeout(() => {
+            _touchDragActive = true;
+            _touchDragEl     = el;
+            _touchDragSrc    = { shelfIdx: +el.dataset.shelf, itemIdx: +el.dataset.idx };
+            el.classList.add('dragging');
+            if (navigator.vibrate) navigator.vibrate(40);
+
+            // Build ghost from the item
+            let ghost = document.getElementById('plano-drag-ghost');
+            if (!ghost) {
+                ghost = document.createElement('div');
+                ghost.id = 'plano-drag-ghost';
+                document.body.appendChild(ghost);
+            }
+            ghost.innerHTML = el.innerHTML;
+            ghost.className = 'plano-item';
+            ghost.id = 'plano-drag-ghost';
+            ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;opacity:0.88;transform:rotate(2deg) scale(1.05);width:${el.offsetWidth}px;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:white;border:1.5px solid #93C5FD;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);`;
+            ghost.style.left = (t.clientX - el.offsetWidth / 2) + 'px';
+            ghost.style.top  = (t.clientY - 34) + 'px';
+            _touchGhostEl = ghost;
+        }, 450);
+    }
+
+    function onTouchMove(e) {
+        const t = e.touches[0];
+        // Cancel long-press if user scrolls
+        if (!_touchDragActive) {
+            const dx = Math.abs(t.clientX - _touchStartX);
+            const dy = Math.abs(t.clientY - _touchStartY);
+            if (dx > 8 || dy > 8) clearTimeout(_touchLongPress);
+            return;
+        }
+        e.preventDefault();
+
+        if (_touchGhostEl) {
+            _touchGhostEl.style.left = (t.clientX - parseInt(_touchGhostEl.style.width) / 2) + 'px';
+            _touchGhostEl.style.top  = (t.clientY - 34) + 'px';
+        }
+
+        // Highlight zone under touch
+        document.querySelectorAll('.plano-items.drag-over').forEach(z => z.classList.remove('drag-over'));
+        if (_touchGhostEl) _touchGhostEl.style.display = 'none';
+        const under = document.elementFromPoint(t.clientX, t.clientY);
+        if (_touchGhostEl) _touchGhostEl.style.display = 'flex';
+        const zone = under && under.closest('.plano-items');
+        if (zone) zone.classList.add('drag-over');
+    }
+
+    function onTouchEnd(e) {
+        clearTimeout(_touchLongPress);
+        if (!_touchDragActive || !_touchDragSrc) { onTouchCancel(); return; }
+
+        const t = e.changedTouches[0];
+        if (_touchGhostEl) _touchGhostEl.style.display = 'none';
+        const under = document.elementFromPoint(t.clientX, t.clientY);
+        if (_touchGhostEl) _touchGhostEl.style.display = 'flex';
+
+        const zone = under && under.closest('.plano-items');
+        if (zone) {
+            const toShelfIdx  = +zone.dataset.shelf;
+            const fromShelfIdx = _touchDragSrc.shelfIdx;
+            const fromItemIdx  = _touchDragSrc.itemIdx;
+
+            let toItemIdx = currentPlanogram.shelves[toShelfIdx].items.length;
+            const targetItem = under.closest('.plano-item');
+            if (targetItem && +targetItem.dataset.shelf === toShelfIdx) {
+                const rect = targetItem.getBoundingClientRect();
+                toItemIdx = +targetItem.dataset.idx;
+                if (t.clientX >= rect.left + rect.width / 2) toItemIdx++;
+            }
+
+            planoMoveItem(fromShelfIdx, fromItemIdx, toShelfIdx, toItemIdx);
+        }
+
+        onTouchCancel();
+    }
+
+    function onTouchCancel() {
+        clearTimeout(_touchLongPress);
+        _touchDragActive = false;
+        _touchDragEl     = null;
+        _touchDragSrc    = null;
+        if (_touchGhostEl) {
+            _touchGhostEl.style.display = 'none';
+            _touchGhostEl.innerHTML     = '';
+        }
+        _touchGhostEl = null;
+        document.querySelectorAll('.plano-item.dragging').forEach(el => el.classList.remove('dragging'));
+        document.querySelectorAll('.plano-items.drag-over').forEach(z => z.classList.remove('drag-over'));
+    }
+
+    init();
+
+    // ========== BARCODE SCANNER ==========
+
+    let _html5QrCode = null;
+    let _scannedBarcode = null;
+    window._scannedProductData = null;
+    window._scannedBarcodeRaw = null;
+
+    function _escHtml(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function openScanner() {
+        const modal = document.getElementById('scannerModal');
+        modal.classList.add('open');
+        document.getElementById('scanner-result').style.display = 'none';
+        document.getElementById('scanner-result').innerHTML = '';
+        document.getElementById('scanner-status').textContent = 'Pointez la cam\u00e9ra vers le code-barres';
+        document.getElementById('scanner-status').style.color = '';
+        _scannedBarcode = null;
+        window._scannedProductData = null;
+        window._scannedBarcodeRaw = null;
+
+        if (!_html5QrCode) {
+            _html5QrCode = new Html5Qrcode('qr-reader');
+        }
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 260, height: 100 },
+            aspectRatio: 1.6,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39
+            ]
+        };
+
+        _html5QrCode.start(
+            { facingMode: 'environment' },
+            config,
+            _onBarcodeDetected,
+            () => {}
+        ).catch(() => {
+            document.getElementById('scanner-status').textContent = 'Impossible d\'acc\u00e9der \u00e0 la cam\u00e9ra. V\u00e9rifiez les permissions.';
+        });
+    }
+
+    function closeScanner() {
+        document.getElementById('scannerModal').classList.remove('open');
+        if (_html5QrCode) {
+            _html5QrCode.stop().catch(() => {});
+        }
+    }
+
+    async function _onBarcodeDetected(decodedText) {
+        if (_scannedBarcode) return; // already handled
+        _scannedBarcode = decodedText;
+        window._scannedBarcodeRaw = decodedText;
+
+        if (_html5QrCode) _html5QrCode.stop().catch(() => {});
+
+        const statusEl = document.getElementById('scanner-status');
+        statusEl.textContent = '\u2705 Code d\u00e9tect\u00e9 : ' + decodedText;
+        statusEl.style.color = '#0D9488';
+
+        const resultDiv = document.getElementById('scanner-result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'scanner-result';
+        resultDiv.innerHTML = '<div style="text-align:center;color:#64748b;padding:6px 0">\uD83D\uDD0D Recherche du produit\u2026</div>';
+
+        try {
+            const res = await fetch('/api/barcode/' + encodeURIComponent(decodedText));
+            const data = await res.json();
+
+            if (data.found && data.product) {
+                const p = data.product;
+                window._scannedProductData = p;
+                const srcLabel = data.source === 'bdpm' ? 'BDPM' : data.source === 'openfoodfacts' ? 'Open Food Facts' : 'Catalogue collaboratif';
+                resultDiv.className = 'scanner-result';
+                resultDiv.innerHTML =
+                    '<div style="font-weight:700;color:#065f46;margin-bottom:4px">\u2705 Produit trouv\u00e9&ensp;<span style="font-size:0.75rem;background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:6px;font-weight:500">' + _escHtml(srcLabel) + '</span></div>' +
+                    '<div style="font-size:0.92rem;color:#047857;margin-bottom:2px"><strong>' + _escHtml(p.name) + '</strong></div>' +
+                    (p.brand ? '<div style="font-size:0.8rem;color:#64748b">' + _escHtml(p.brand) + '</div>' : '') +
+                    (p.width ? '<div style="font-size:0.78rem;color:#94a3b8;margin-top:4px">' + p.width + ' \u00d7 ' + p.height + ' \u00d7 ' + p.depth + ' cm</div>' : '') +
+                    '<button class="scanner-result-btn scanner-result-btn-primary" onclick="applyScannedProduct()">Utiliser ce produit</button>';
+            } else {
+                window._scannedProductData = null;
+                resultDiv.className = 'scanner-result scanner-result-notfound';
+                resultDiv.innerHTML =
+                    '<div style="font-weight:700;color:#92400e;margin-bottom:4px">\u26a0\ufe0f Produit non trouv\u00e9 dans la base</div>' +
+                    '<div style="font-size:0.8rem;color:#64748b">Saisissez les informations manuellement \u2014 elles enrichiront la base collaborative.</div>' +
+                    '<button class="scanner-result-btn scanner-result-btn-secondary" onclick="applyScannedBarcode()">Saisie manuelle</button>';
+            }
+        } catch {
+            resultDiv.className = 'scanner-result scanner-result-notfound';
+            resultDiv.innerHTML = '<div style="color:#ef4444">Erreur de connexion. Fermez et r\u00e9essayez.</div>';
+        }
+    }
+
+    function applyScannedProduct() {
+        const p = window._scannedProductData;
+        if (!p) return;
+        document.getElementById('prodName').value = p.name || '';
+        if (p.width) document.getElementById('prodWidth').value = p.width;
+        if (p.height) document.getElementById('prodHeight').value = p.height;
+        if (p.depth) document.getElementById('prodDepth').value = p.depth;
+        closeScanner();
+        showToast('\uD83C\uDFAF ' + (p.name || 'Produit') + ' pr\u00e9-rempli !');
+        document.getElementById('prodName').focus();
+    }
+
+    function applyScannedBarcode() {
+        closeScanner();
+        document.getElementById('prodName').value = '';
+        document.getElementById('prodName').focus();
+    }
+
+    // Override addProduct to silently save to catalog when a barcode was scanned
+    const _addProductOriginal = addProduct;
+    addProduct = async function() {
+        const barcodeBeforeAdd = window._scannedBarcodeRaw;
+        // Capture form values BEFORE original function clears the form
+        const nameBeforeAdd = document.getElementById('prodName') ? document.getElementById('prodName').value.trim() : '';
+        const widthBeforeAdd = parseFloat(document.getElementById('prodWidth') ? document.getElementById('prodWidth').value : '') || null;
+        const heightBeforeAdd = parseFloat(document.getElementById('prodHeight') ? document.getElementById('prodHeight').value : '') || null;
+        const depthBeforeAdd = parseFloat(document.getElementById('prodDepth') ? document.getElementById('prodDepth').value : '') || null;
+        const brandBeforeAdd = window._scannedProductData && window._scannedProductData.brand ? window._scannedProductData.brand : '';
+
+        await _addProductOriginal();
+
+        // After product added: save to collaborative catalog if a barcode was scanned
+        if (barcodeBeforeAdd && nameBeforeAdd) {
+            fetch('/api/barcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barcode: barcodeBeforeAdd, name: nameBeforeAdd, brand: brandBeforeAdd, width: widthBeforeAdd, height: heightBeforeAdd, depth: depthBeforeAdd })
+            }).catch(() => {});
+            window._scannedBarcodeRaw = null;
+            window._scannedProductData = null;
+        }
+    };
+    </script>
+
+    <!-- Barcode Scanner Modal -->
+    <div id="scannerModal" role="dialog" aria-modal="true" aria-label="Scanner un code-barres">
+        <div class="scanner-box">
+            <button class="scanner-close" onclick="closeScanner()" aria-label="Fermer">&times;</button>
+            <div class="scanner-title">&#128247; Scanner un code-barres</div>
+            <div id="qr-reader"></div>
+            <div id="scanner-status" class="scanner-status">Pointez la cam&eacute;ra vers le code-barres</div>
+            <div id="scanner-result" class="scanner-result" style="display:none"></div>
+        </div>
+    </div>
+</body>
+</html>

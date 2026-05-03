@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Alertes Stock - ShelfRx</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --teal-50: #F0FDFA;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --blue: #3B82F6;
+            --blue-light: #EFF6FF;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-300: #CBD5E1;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --white: #FFFFFF;
+        }
+        body { font-family: 'DM Sans', sans-serif; color: var(--slate-700); background: var(--slate-100); min-height: 100vh; }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+
+        .topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--slate-200);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--slate-900);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .topbar-pill { background: var(--teal); color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; }
+
+        .notif-bell {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.3rem;
+            border-radius: 6px;
+            color: var(--teal);
+            text-decoration: none;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--red);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+        }
+        .notif-badge.visible { display: flex; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.65rem 1.25rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+            font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s;
+            text-decoration: none;
+        }
+        .btn-primary { background: var(--teal); color: white; }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-secondary { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-300); }
+        .btn-secondary:hover { background: var(--slate-200); }
+        .btn-ghost { background: transparent; color: var(--teal); padding: 0.4rem 0.75rem; }
+        .btn-ghost:hover { background: var(--teal-50); }
+        .btn-danger { background: transparent; color: var(--red); padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+        .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+
+        .content { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        .page-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+        }
+        .page-header h1 { font-size: 1.5rem; }
+        .page-header p { color: var(--slate-500); font-size: 0.88rem; margin-top: 0.25rem; }
+
+        .tabs {
+            display: flex; gap: 0.25rem; background: var(--white);
+            border: 1px solid var(--slate-200); border-radius: 10px;
+            padding: 0.3rem; margin-bottom: 1.25rem;
+        }
+        .tab-btn {
+            padding: 0.45rem 1rem; border-radius: 7px; font-size: 0.83rem; font-weight: 500;
+            cursor: pointer; border: none; background: transparent; color: var(--slate-500);
+            font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+        }
+        .tab-btn.active { background: var(--teal); color: white; font-weight: 600; }
+        .tab-btn:hover:not(.active) { background: var(--slate-100); color: var(--slate-700); }
+
+        .alert-card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-left: 4px solid var(--slate-300);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: border-color 0.15s, opacity 0.15s;
+        }
+        .alert-card.unread { border-left-color: var(--teal); background: var(--teal-50); }
+        .alert-card.priority-critical { border-left-color: var(--red); }
+        .alert-card.priority-critical.unread { background: var(--red-light); }
+        .alert-card.priority-warning { border-left-color: var(--amber); }
+        .alert-card.priority-warning.unread { background: var(--amber-light); }
+        .alert-card.priority-info { border-left-color: var(--blue); }
+        .alert-card.priority-info.unread { background: var(--blue-light); }
+
+        .alert-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 0.1rem; }
+        .alert-body { flex: 1; min-width: 0; }
+        .alert-title { font-weight: 600; font-size: 0.92rem; color: var(--slate-900); margin-bottom: 0.2rem; }
+        .alert-meta { font-size: 0.78rem; color: var(--slate-500); display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .alert-meta span { display: flex; align-items: center; gap: 0.25rem; }
+        .alert-actions { display: flex; gap: 0.4rem; flex-shrink: 0; align-items: flex-start; }
+
+        .priority-badge {
+            display: inline-flex; align-items: center; padding: 0.15rem 0.5rem;
+            border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+        }
+        .priority-badge.critical { background: var(--red-light); color: var(--red); }
+        .priority-badge.warning { background: var(--amber-light); color: #92400e; }
+        .priority-badge.info { background: var(--blue-light); color: #1d4ed8; }
+
+        .section-card {
+            background: var(--white); border: 1px solid var(--slate-200);
+            border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;
+        }
+        .section-title { font-size: 1.1rem; margin-bottom: 1rem; }
+
+        .threshold-row {
+            display: grid; grid-template-columns: 1fr auto auto auto;
+            align-items: center; gap: 0.75rem;
+            padding: 0.75rem 0; border-bottom: 1px solid var(--slate-100);
+        }
+        .threshold-row:last-child { border-bottom: none; }
+        .threshold-label { font-size: 0.88rem; font-weight: 500; }
+        .threshold-label small { color: var(--slate-400); font-size: 0.75rem; display: block; font-weight: 400; }
+        .threshold-input {
+            width: 80px; padding: 0.4rem 0.6rem; border: 1px solid var(--slate-300);
+            border-radius: 6px; font-size: 0.85rem; text-align: center;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .threshold-input:focus { outline: none; border-color: var(--teal); }
+
+        .toggle {
+            position: relative; width: 40px; height: 22px; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--slate-300); border-radius: 22px; transition: 0.2s;
+        }
+        .toggle-slider::before {
+            position: absolute; content: ""; height: 16px; width: 16px;
+            left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--teal); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--slate-700); margin-bottom: 0.35rem; }
+        .form-input {
+            width: 100%; padding: 0.6rem 0.85rem; border: 1px solid var(--slate-300);
+            border-radius: 8px; font-size: 0.88rem; font-family: 'DM Sans', sans-serif;
+        }
+        .form-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+        .form-hint { font-size: 0.75rem; color: var(--slate-400); margin-top: 0.3rem; }
+
+        .setting-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.85rem 0; border-bottom: 1px solid var(--slate-100);
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label { font-size: 0.88rem; font-weight: 500; }
+        .setting-desc { font-size: 0.78rem; color: var(--slate-500); margin-top: 0.15rem; }
+
+        .stats-row {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--white); border: 1px solid var(--slate-200); border-radius: 12px;
+            padding: 1.25rem; text-align: center;
+        }
+        .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; }
+        .stat-value.red { color: var(--red); }
+        .stat-value.amber { color: var(--amber); }
+        .stat-value.blue { color: var(--blue); }
+        .stat-label { font-size: 0.78rem; color: var(--slate-500); margin-top: 0.25rem; }
+
+        .empty-state { text-align: center; padding: 3rem 2rem; color: var(--slate-400); }
+        .empty-state-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        .empty-state h3 { color: var(--slate-700); margin-bottom: 0.5rem; font-size: 1rem; }
+
+        .spinner {
+            width: 28px; height: 28px; border: 3px solid var(--slate-200);
+            border-top-color: var(--teal); border-radius: 50%;
+            animation: spin 0.7s linear infinite; margin: 2rem auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #toast {
+            position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+            background: var(--slate-900); color: white; padding: 0.65rem 1.25rem;
+            border-radius: 8px; font-size: 0.85rem; z-index: 1000;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        #toast.visible { opacity: 1; }
+
+        .add-threshold-form {
+            background: var(--slate-100); border-radius: 10px; padding: 1rem;
+            margin-top: 1rem; display: none;
+        }
+        .add-threshold-form.open { display: block; }
+
+        @media (max-width: 600px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .threshold-row { grid-template-columns: 1fr auto auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a class="topbar-logo" href="/">ShelfRx <span class="topbar-pill">BETA</span></a>
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+        <a href="/app/alerts" class="notif-bell" title="Alertes stock">
+            🔔
+            <span class="notif-badge" id="globalBadge"></span>
+        </a>
+        <div id="userPill" style="display:none; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--slate-500); cursor:pointer; position:relative;" onclick="toggleDd()">
+            <span>👤</span>
+            <span id="userPillName" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+            <div id="userDd" style="display:none; position:absolute; top:calc(100% + 0.5rem); right:0; background:white; border:1px solid var(--slate-200); border-radius:10px; padding:0.5rem; min-width:180px; box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:100;">
+                <div id="userDdEmail" style="padding:0.4rem 0.75rem; font-size:0.75rem; color:var(--slate-400); border-bottom:1px solid var(--slate-100); margin-bottom:0.25rem;"></div>
+                <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/app/planograms'">🗂️ Mes planogrammes</div>
+                <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/app/analytics'">📊 Analytiques</div>
+                <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/app/stock'">📦 Connexion Stock</div>
+                <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/billing'">💳 Abonnement</div>
+                <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="doLogout()">🔓 Se déconnecter</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="content">
+    <div class="page-header">
+        <div>
+            <h1>🔔 Mes alertes stock</h1>
+            <p>Surveillez les ruptures et surstocks de votre pharmacie en temps réel.</p>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="markAllRead()">✓ Tout marquer lu</button>
+            <a href="/app/planograms" class="btn btn-primary btn-sm">← Mes planogrammes</a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+        <div class="stat-card"><div class="stat-value red" id="statCritical">—</div><div class="stat-label">Critiques</div></div>
+        <div class="stat-card"><div class="stat-value amber" id="statWarning">—</div><div class="stat-label">Stocks bas</div></div>
+        <div class="stat-card"><div class="stat-value blue" id="statInfo">—</div><div class="stat-label">Surstocks</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" id="tabAlerts" onclick="switchTab('alerts')">Alertes actives</button>
+        <button class="tab-btn" id="tabHistory" onclick="switchTab('history')">Historique</button>
+        <button class="tab-btn" id="tabThresholds" onclick="switchTab('thresholds')">Seuils</button>
+        <button class="tab-btn" id="tabSettings" onclick="switchTab('settings')">Notifications</button>
+    </div>
+
+    <!-- ALERTS TAB -->
+    <div id="panelAlerts">
+        <div class="spinner" id="alertsSpinner"></div>
+        <div id="alertsList" style="display:none;"></div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="panelHistory" style="display:none;">
+        <div class="spinner" id="historySpinner"></div>
+        <div id="historyList" style="display:none;"></div>
+    </div>
+
+    <!-- THRESHOLDS TAB -->
+    <div id="panelThresholds" style="display:none;">
+        <div class="section-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 class="section-title" style="margin-bottom:0;">Configuration des seuils</h3>
+                <button class="btn btn-secondary btn-sm" onclick="toggleAddForm()">+ Seuil produit</button>
+            </div>
+
+            <div class="add-threshold-form" id="addThresholdForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Code CIP *</label>
+                        <input type="text" class="form-input" id="newCip" placeholder="3400000000000" maxlength="30">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nom produit</label>
+                        <input type="text" class="form-input" id="newLabel" placeholder="Ex: Doliprane 1g">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Seuil rupture (unités ≤)</label>
+                        <input type="number" class="form-input" id="newRupture" value="5" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Seuil surstock (unités ≥)</label>
+                        <input type="number" class="form-input" id="newSurstock" value="200" min="1">
+                    </div>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-primary btn-sm" onclick="saveNewThreshold()">Enregistrer</button>
+                    <button class="btn btn-secondary btn-sm" onclick="toggleAddForm()">Annuler</button>
+                </div>
+            </div>
+
+            <div id="thresholdsList"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="panelSettings" style="display:none;">
+        <div class="section-card">
+            <h3 class="section-title">Préférences de notification</h3>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">📧 Email — Alertes critiques immédiates</div>
+                    <div class="setting-desc">Reçoit un email dès qu'une rupture est détectée</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="settingEmailCritical" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">☀️ Email — Briefing quotidien</div>
+                    <div class="setting-desc">Résumé envoyé chaque matin à l'heure choisie</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="settingEmailBriefing" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+            </div>
+
+            <div class="setting-row" id="briefingHourRow">
+                <div>
+                    <div class="setting-label">Heure du briefing</div>
+                    <div class="setting-desc">Entre 0 et 23 (heure de Paris)</div>
+                </div>
+                <select class="form-input" id="settingBriefingHour" style="width:80px;" onchange="saveSettings()">
+                    ${Array.from({length:24},(_,i)=>`<option value="${i}">${String(i).padStart(2,'0')}h00</option>`).join('')}
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">📱 SMS — Alertes critiques</div>
+                    <div class="setting-desc">SMS immédiat en cas de rupture (Twilio, ~0.05€/SMS)</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="settingSmsEnabled" onchange="toggleSmsSection()"><span class="toggle-slider"></span></label>
+            </div>
+
+            <div id="smsSection" style="display:none; padding: 0.75rem 0; border-bottom: 1px solid var(--slate-100);">
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                    <label class="form-label">Numéro de téléphone (format international)</label>
+                    <input type="tel" class="form-input" id="settingPhone" placeholder="+33 6 12 34 56 78" style="max-width:280px;" oninput="scheduleSettingsSave()">
+                    <div class="form-hint">Format E.164 requis : +336XXXXXXXX</div>
+                </div>
+                <div id="twilioStatus" style="font-size:0.78rem; color:var(--slate-400); margin-top:0.4rem;"></div>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <button class="btn btn-primary btn-sm" onclick="saveSettings()">Enregistrer les préférences</button>
+                <span id="settingsSavedMsg" style="margin-left:0.75rem; font-size:0.8rem; color:var(--teal); display:none;">✓ Enregistré</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== AUTH =====
+function getToken() { return localStorage.getItem('shelfrx_token'); }
+function doLogout() {
+    localStorage.removeItem('shelfrx_token');
+    window.location.href = '/login';
+}
+function toggleDd() {
+    const dd = document.getElementById('userDd');
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', e => {
+    const pill = document.getElementById('userPill');
+    const dd = document.getElementById('userDd');
+    if (pill && !pill.contains(e.target)) dd.style.display = 'none';
+});
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg, ms = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('visible'), ms);
+}
+
+// ===== API =====
+async function api(method, path, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(path, opts);
+    if (r.status === 401) { window.location.href = '/login'; return null; }
+    return r.json();
+}
+
+// ===== INIT =====
+async function init() {
+    if (!getToken()) { window.location.href = '/login'; return; }
+
+    // Load user info
+    const me = await api('GET', '/api/auth/me');
+    if (!me) return;
+    const pill = document.getElementById('userPill');
+    pill.style.display = 'flex';
+    document.getElementById('userPillName').textContent = me.name || me.email;
+    document.getElementById('userDdEmail').textContent = me.email;
+
+    // Load badge count
+    updateBadgeCount();
+
+    // Load alerts (active tab)
+    loadAlerts(false);
+}
+
+async function updateBadgeCount() {
+    try {
+        const data = await api('GET', '/api/alerts/count');
+        if (!data) return;
+        const badge = document.getElementById('globalBadge');
+        if (data.unread > 0) {
+            badge.textContent = data.unread > 99 ? '99+' : data.unread;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+    } catch (_) {}
+}
+
+// ===== TABS =====
+let currentTab = 'alerts';
+function switchTab(tab) {
+    currentTab = tab;
+    ['alerts','history','thresholds','settings'].forEach(t => {
+        document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+        document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
+    });
+    if (tab === 'alerts') loadAlerts(false);
+    else if (tab === 'history') loadAlerts(true);
+    else if (tab === 'thresholds') loadThresholds();
+    else if (tab === 'settings') loadSettings();
+}
+
+// ===== ALERTS =====
+function alertIcon(type) {
+    if (type === 'rupture') return '🔴';
+    if (type === 'rupture_imminente') return '🟠';
+    return '🔵';
+}
+function alertLabel(type) {
+    if (type === 'rupture') return 'Rupture de stock';
+    if (type === 'rupture_imminente') return 'Rupture imminente';
+    return 'Surstock';
+}
+function priorityBadge(p) {
+    const labels = { critical: 'Critique', warning: 'Attention', info: 'Info' };
+    return `<span class="priority-badge ${p}">${labels[p] || p}</span>`;
+}
+function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadAlerts(showAll) {
+    const spinnerId = showAll ? 'historySpinner' : 'alertsSpinner';
+    const listId = showAll ? 'historyList' : 'alertsList';
+    document.getElementById(spinnerId).style.display = 'block';
+    document.getElementById(listId).style.display = 'none';
+
+    const params = showAll ? '' : '?unread=false';
+    const data = await api('GET', '/api/alerts' + params);
+    if (!data) return;
+
+    document.getElementById(spinnerId).style.display = 'none';
+    document.getElementById(listId).style.display = 'block';
+
+    // Update stats (only on active tab)
+    if (!showAll) {
+        const criticals = data.alerts.filter(a => a.priority === 'critical' && !a.read).length;
+        const warnings = data.alerts.filter(a => a.priority === 'warning' && !a.read).length;
+        const infos = data.alerts.filter(a => a.priority === 'info' && !a.read).length;
+        document.getElementById('statCritical').textContent = criticals;
+        document.getElementById('statWarning').textContent = warnings;
+        document.getElementById('statInfo').textContent = infos;
+    }
+
+    const container = document.getElementById(listId);
+    if (data.alerts.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><h3>Aucune alerte</h3><p>${showAll ? 'Aucun historique disponible.' : 'Votre stock est dans les seuils.'}</p></div>`;
+        return;
+    }
+
+    container.innerHTML = data.alerts.map(a => `
+        <div class="alert-card ${!a.read ? 'unread' : ''} priority-${a.priority}" id="alert-${a.id}">
+            <div class="alert-icon">${alertIcon(a.alert_type)}</div>
+            <div class="alert-body">
+                <div class="alert-title">${escHtml(a.label || a.cip_code)} ${priorityBadge(a.priority)}</div>
+                <div class="alert-meta">
+                    <span>${alertLabel(a.alert_type)} — ${a.quantity} unités (seuil : ${a.threshold_qty})</span>
+                    <span>CIP ${escHtml(a.cip_code)}</span>
+                    <span>🕐 ${formatDate(a.triggered_at)}</span>
+                    ${a.email_sent ? '<span>📧 Email envoyé</span>' : ''}
+                    ${a.sms_sent ? '<span>📱 SMS envoyé</span>' : ''}
+                </div>
+            </div>
+            <div class="alert-actions">
+                ${!a.read ? `<button class="btn btn-ghost btn-sm" onclick="markRead('${a.id}')">Marquer lu</button>` : '<span style="font-size:0.75rem;color:var(--slate-400);">Lu</span>'}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function markRead(id) {
+    await api('PATCH', `/api/alerts/${id}/read`);
+    const card = document.getElementById('alert-' + id);
+    if (card) {
+        card.classList.remove('unread');
+        const btn = card.querySelector('.alert-actions button');
+        if (btn) btn.parentElement.innerHTML = '<span style="font-size:0.75rem;color:var(--slate-400);">Lu</span>';
+    }
+    updateBadgeCount();
+}
+
+async function markAllRead() {
+    const data = await api('PATCH', '/api/alerts/read-all');
+    if (data && data.updated !== undefined) {
+        showToast(`${data.updated} alerte(s) marquée(s) comme lues`);
+        loadAlerts(false);
+        updateBadgeCount();
+    }
+}
+
+// ===== THRESHOLDS =====
+async function loadThresholds() {
+    const data = await api('GET', '/api/alerts/thresholds');
+    const container = document.getElementById('thresholdsList');
+    if (!data) return;
+
+    // Separate global from product-specific
+    const global_ = data.find(t => !t.cip_code);
+    const products = data.filter(t => t.cip_code);
+
+    let html = '';
+
+    // Global threshold
+    html += `<div style="font-size:0.8rem; font-weight:600; color:var(--slate-500); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem; margin-top:0.25rem;">Seuils globaux (défaut)</div>`;
+    const gRupture = global_ ? global_.rupture_qty : 5;
+    const gSurstock = global_ ? global_.surstock_qty : 200;
+    html += `<div class="threshold-row">
+        <div class="threshold-label">Tous produits <small>S'applique si aucun seuil spécifique</small></div>
+        <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:var(--slate-500);">
+            Rupture ≤ <input type="number" class="threshold-input" id="globalRupture" value="${gRupture}" min="0" onchange="saveGlobalThreshold()">
+        </div>
+        <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:var(--slate-500);">
+            Surstock ≥ <input type="number" class="threshold-input" id="globalSurstock" value="${gSurstock}" min="1" onchange="saveGlobalThreshold()">
+        </div>
+        <div></div>
+    </div>`;
+
+    if (products.length > 0) {
+        html += `<div style="font-size:0.8rem; font-weight:600; color:var(--slate-500); text-transform:uppercase; letter-spacing:0.05em; margin:1rem 0 0.5rem;">Seuils par produit</div>`;
+        products.forEach(t => {
+            html += `<div class="threshold-row" id="thresh-${t.id}">
+                <div class="threshold-label">${escHtml(t.label || t.cip_code)} <small>CIP ${escHtml(t.cip_code)}</small></div>
+                <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:var(--slate-500);">
+                    Rupture ≤ <input type="number" class="threshold-input" value="${t.rupture_qty}" min="0"
+                        onchange="saveProductThreshold('${t.cip_code}', this.value, document.querySelector('#thresh-${t.id} input:nth-of-type(2)').value, '${escHtml(t.label || '')}')">
+                </div>
+                <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:var(--slate-500);">
+                    Surstock ≥ <input type="number" class="threshold-input" value="${t.surstock_qty}" min="1"
+                        onchange="saveProductThreshold('${t.cip_code}', document.querySelector('#thresh-${t.id} input:first-of-type').value, this.value, '${escHtml(t.label || '')}')">
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="deleteThreshold('${t.id}')">✕</button>
+            </div>`;
+        });
+    }
+
+    container.innerHTML = html;
+}
+
+async function saveGlobalThreshold() {
+    const rupture = parseInt(document.getElementById('globalRupture').value);
+    const surstock = parseInt(document.getElementById('globalSurstock').value);
+    if (isNaN(rupture) || isNaN(surstock)) return;
+    const data = await api('PUT', '/api/alerts/thresholds', { rupture_qty: rupture, surstock_qty: surstock });
+    if (data && data.id) showToast('Seuils globaux enregistrés ✓');
+}
+
+async function saveProductThreshold(cip, rupture, surstock, label) {
+    const data = await api('PUT', '/api/alerts/thresholds', { cip_code: cip, label, rupture_qty: parseInt(rupture), surstock_qty: parseInt(surstock) });
+    if (data && data.id) showToast('Seuil enregistré ✓');
+}
+
+async function deleteThreshold(id) {
+    if (!confirm('Supprimer ce seuil produit ?')) return;
+    const data = await api('DELETE', `/api/alerts/thresholds/${id}`);
+    if (data && data.deleted) { showToast('Seuil supprimé'); loadThresholds(); }
+}
+
+function toggleAddForm() {
+    const f = document.getElementById('addThresholdForm');
+    f.classList.toggle('open');
+}
+
+async function saveNewThreshold() {
+    const cip = document.getElementById('newCip').value.trim();
+    const label = document.getElementById('newLabel').value.trim();
+    const rupture = parseInt(document.getElementById('newRupture').value);
+    const surstock = parseInt(document.getElementById('newSurstock').value);
+    if (!cip) { showToast('Code CIP requis'); return; }
+    if (isNaN(rupture) || isNaN(surstock)) { showToast('Seuils invalides'); return; }
+    const data = await api('PUT', '/api/alerts/thresholds', { cip_code: cip, label, rupture_qty: rupture, surstock_qty: surstock });
+    if (data && data.id) {
+        showToast('Seuil ajouté ✓');
+        document.getElementById('newCip').value = '';
+        document.getElementById('newLabel').value = '';
+        toggleAddForm();
+        loadThresholds();
+    } else if (data && data.error) {
+        showToast(data.error);
+    }
+}
+
+// ===== SETTINGS =====
+let settingsData = null;
+let settingsSaveTimer = null;
+
+async function loadSettings() {
+    const data = await api('GET', '/api/alerts/settings');
+    if (!data) return;
+    settingsData = data;
+
+    document.getElementById('settingEmailCritical').checked = data.email_critical !== false;
+    document.getElementById('settingEmailBriefing').checked = data.email_daily_briefing !== false;
+    document.getElementById('settingBriefingHour').value = data.briefing_hour || 7;
+    document.getElementById('settingSmsEnabled').checked = data.sms_enabled || false;
+    document.getElementById('settingPhone').value = data.phone_number || '';
+
+    toggleSmsSection(false);
+
+    if (!data.twilio_configured) {
+        document.getElementById('twilioStatus').textContent = '⚠️ SMS non disponible — configuration Twilio manquante.';
+        document.getElementById('settingSmsEnabled').disabled = true;
+    }
+}
+
+function toggleSmsSection(doSave = true) {
+    const enabled = document.getElementById('settingSmsEnabled').checked;
+    document.getElementById('smsSection').style.display = enabled ? 'block' : 'none';
+    if (doSave) saveSettings();
+}
+
+function scheduleSettingsSave() {
+    clearTimeout(settingsSaveTimer);
+    settingsSaveTimer = setTimeout(saveSettings, 800);
+}
+
+async function saveSettings() {
+    const data = await api('PUT', '/api/alerts/settings', {
+        email_critical: document.getElementById('settingEmailCritical').checked,
+        email_daily_briefing: document.getElementById('settingEmailBriefing').checked,
+        briefing_hour: parseInt(document.getElementById('settingBriefingHour').value),
+        sms_enabled: document.getElementById('settingSmsEnabled').checked,
+        phone_number: document.getElementById('settingPhone').value.trim() || null
+    });
+    if (data && data.saved) {
+        const msg = document.getElementById('settingsSavedMsg');
+        msg.style.display = 'inline';
+        setTimeout(() => { msg.style.display = 'none'; }, 2000);
+    }
+}
+
+// ===== HELPERS =====
+function escHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
