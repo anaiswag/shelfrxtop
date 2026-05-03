@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifs — ShelfRx | Planogrammes pour pharmacies</title>
+    <meta name="description" content="Choisissez votre formule ShelfRx. Classique à 79 €/mois ou Premium à 99 €/mois avec analytics et recommandations IA. Essai gratuit 7 jours.">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --white: #FFFFFF;
+            --cream: #F8FAFC;
+            --mint: #F0FDFA;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--slate-700);
+            background: var(--white);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--slate-900);
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 1.2rem 2rem;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--slate-900);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo-pill {
+            background: var(--teal);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .nav-cta {
+            background: var(--teal);
+            color: white;
+            text-decoration: none;
+            padding: 0.55rem 1.4rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+        .nav-cta:hover { background: var(--teal-dark); }
+        .nav-link {
+            font-size: 0.9rem;
+            color: var(--slate-700);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .nav-link:hover { color: var(--teal); }
+
+        /* HERO */
+        .pricing-hero {
+            padding: 9rem 2rem 5rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--cream) 0%, var(--white) 100%);
+        }
+        .pricing-hero h1 {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 1rem;
+        }
+        .pricing-hero p {
+            font-size: 1.1rem;
+            color: var(--slate-500);
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .pricing-hero .badge-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .trial-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--teal-light);
+            color: var(--teal-dark);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.4rem 0.9rem;
+            border-radius: 50px;
+        }
+
+        /* PRICING GRID */
+        .pricing-section {
+            padding: 2rem 2rem 6rem;
+            max-width: 950px;
+            margin: 0 auto;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 680px) {
+            .pricing-grid { grid-template-columns: 1fr; }
+        }
+
+        .plan-card {
+            background: var(--white);
+            border: 1.5px solid var(--slate-200);
+            border-radius: 20px;
+            padding: 2.2rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.2s;
+        }
+        .plan-card:hover {
+            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        }
+        .plan-card.popular {
+            border-color: var(--teal);
+            box-shadow: 0 4px 30px rgba(13,148,136,0.12);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--teal);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.3rem 1.1rem;
+            border-radius: 50px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .plan-header { margin-bottom: 1.8rem; }
+        .plan-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--slate-900);
+            margin-bottom: 0.6rem;
+        }
+        .plan-price {
+            display: flex;
+            align-items: baseline;
+            gap: 0.3rem;
+            margin-bottom: 0.4rem;
+        }
+        .plan-price .amount {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--slate-900);
+            line-height: 1;
+        }
+        .plan-price .currency {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--slate-500);
+        }
+        .plan-price .period {
+            font-size: 0.9rem;
+            color: var(--slate-400);
+            font-weight: 500;
+        }
+        .plan-tagline {
+            font-size: 0.88rem;
+            color: var(--slate-500);
+            line-height: 1.5;
+        }
+        .plan-divider {
+            border: none;
+            border-top: 1px solid var(--slate-100);
+            margin: 1.4rem 0;
+        }
+
+        /* FEATURE LIST */
+        .feature-list {
+            list-style: none;
+            flex: 1;
+        }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.55rem 0;
+            font-size: 0.92rem;
+            line-height: 1.45;
+        }
+        .feature-item .icon {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            margin-top: 2px;
+            font-weight: 700;
+        }
+        .feature-item .icon.included {
+            background: var(--teal);
+            color: white;
+        }
+        .feature-item .icon.excluded {
+            background: var(--slate-100);
+            color: var(--slate-400);
+        }
+        .feature-item .icon.excluded::before { content: '–'; }
+        .feature-item .icon.included::before { content: '✓'; }
+        .feature-item .label { color: var(--slate-700); }
+        .feature-item .label.dimmed { color: var(--slate-400); }
+
+        /* CTA BUTTON */
+        .plan-cta-wrap {
+            margin-top: 1.8rem;
+        }
+        .plan-cta {
+            display: block;
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.15s;
+            cursor: pointer;
+            border: none;
+        }
+        .plan-cta.primary {
+            background: var(--teal);
+            color: white;
+        }
+        .plan-cta.primary:hover {
+            background: var(--teal-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(13,148,136,0.3);
+        }
+        .plan-cta.secondary {
+            background: var(--slate-100);
+            color: var(--slate-700);
+        }
+        .plan-cta.secondary:hover {
+            background: var(--slate-200);
+        }
+        .plan-subtext {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--slate-400);
+            margin-top: 0.7rem;
+        }
+
+        /* GUARANTEE ROW */
+        .guarantee-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.8rem;
+            margin-top: 2.5rem;
+            flex-wrap: wrap;
+        }
+        .guarantee-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.82rem;
+            color: var(--slate-500);
+            font-weight: 500;
+        }
+        .guarantee-item .gi-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--teal-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: var(--teal);
+        }
+
+        /* FAQ */
+        .faq-section {
+            background: var(--cream);
+            padding: 5rem 2rem;
+        }
+        .faq-inner {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .faq-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+        }
+        .faq-item {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 14px;
+            padding: 1.3rem 1.6rem;
+            margin-bottom: 0.9rem;
+            cursor: pointer;
+            transition: box-shadow 0.15s;
+        }
+        .faq-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .faq-q {
+            font-weight: 600;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--slate-900);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .faq-q .toggle-icon {
+            min-width: 22px;
+            height: 22px;
+            background: var(--slate-100);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: var(--slate-500);
+            transition: transform 0.2s, background 0.15s;
+        }
+        .faq-item.open .faq-q .toggle-icon {
+            transform: rotate(45deg);
+            background: var(--teal);
+            color: white;
+        }
+        .faq-a {
+            display: none;
+            margin-top: 0.8rem;
+            font-size: 0.9rem;
+            color: var(--slate-500);
+            line-height: 1.65;
+        }
+        .faq-item.open .faq-a { display: block; }
+
+        /* FOOTER */
+        footer {
+            background: var(--slate-900);
+            color: var(--slate-400);
+            padding: 3.5rem 2rem 2rem;
+        }
+        .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        .footer-brand .footer-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .footer-brand p {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-width: 220px;
+        }
+        .footer-links {
+            display: flex;
+            gap: 3rem;
+        }
+        .footer-col h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--slate-400);
+            margin-bottom: 1rem;
+        }
+        .footer-col a {
+            display: block;
+            color: var(--slate-400);
+            text-decoration: none;
+            font-size: 0.88rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.15s;
+        }
+        .footer-col a:hover { color: white; }
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 2.5rem auto 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--slate-500);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        /* MOBILE */
+        @media (max-width: 600px) {
+            .pricing-hero { padding: 7rem 1.5rem 3rem; }
+            .pricing-section { padding: 1.5rem 1rem 4rem; }
+            .plan-card { padding: 1.8rem 1.4rem; }
+            .guarantee-row { gap: 1rem; }
+            .footer-inner { flex-direction: column; }
+            .footer-links { flex-direction: column; gap: 1.5rem; }
+            .faq-section { padding: 3rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAV -->
+    <nav>
+        <div class="nav-inner">
+            <a class="logo" href="/">ShelfRx <span class="logo-pill">BETA</span></a>
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <a href="/login" class="nav-link">Se connecter</a>
+                <a href="/register" class="nav-cta">Essai gratuit 7 jours →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="pricing-hero">
+        <div class="badge-row">
+            <span class="trial-badge">
+                <span>🎟️</span> Essai gratuit 7 jours — sans carte bancaire
+            </span>
+        </div>
+        <h1>Trouvez la formule qui vous correspond</h1>
+        <p>Deux formules transparentes. Passez à Premium quand vous êtes prêt — sans engagement, sans surprise.</p>
+    </section>
+
+    <!-- PRICING GRID -->
+    <section class="pricing-section">
+        <div class="pricing-grid">
+
+            <!-- CLASSIQUE -->
+            <div class="plan-card" id="plan-classique">
+                <div class="plan-header">
+                    <div class="plan-name">Classique</div>
+                    <div class="plan-price">
+                        <span class="currency">€</span>
+                        <span class="amount">79</span>
+                        <span class="period">/ mois</span>
+                    </div>
+                    <p class="plan-tagline">Outil complet de planogramme pour créer et gérer vos gondoles.</p>
+                </div>
+
+                <hr class="plan-divider">
+
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Photo → planogramme automatique</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Détection IA dimensions étagères</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Détection IA taille produits</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Scan code-barres CIP</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Base collaborative produits (images réelles)</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Drag & drop planogramme</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Connexion stock temps réel</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Alertes ruptures (in-app, email, SMS)</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Export PDF/PNG + liens partageables</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon excluded"></span>
+                        <span class="label dimmed">Dashboard analytics ventes par armoire</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon excluded"></span>
+                        <span class="label dimmed">Recommandations merchandising IA</span>
+                    </li>
+                </ul>
+
+                <div class="plan-cta-wrap">
+                    <a href="/api/billing/checkout" class="plan-cta secondary">Commencer avec Classique →</a>
+                    <p class="plan-subtext">Essai gratuit 7 jours · Sans engagement</p>
+                </div>
+            </div>
+
+            <!-- PREMIUM -->
+            <div class="plan-card popular" id="plan-premium">
+                <div class="popular-badge">⭐ Recommandé</div>
+                <div class="plan-header">
+                    <div class="plan-name">Premium</div>
+                    <div class="plan-price">
+                        <span class="currency">€</span>
+                        <span class="amount">99</span>
+                        <span class="period">/ mois</span>
+                    </div>
+                    <p class="plan-tagline">Classique + analytics avancées et recommandations merchandising IA.</p>
+                </div>
+
+                <hr class="plan-divider">
+
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Photo → planogramme automatique</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Détection IA dimensions étagères</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Détection IA taille produits</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Scan code-barres CIP</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Base collaborative produits (images réelles)</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Drag & drop planogramme</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Connexion stock temps réel</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Alertes ruptures (in-app, email, SMS)</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label">Export PDF/PNG + liens partageables</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label"><strong>Dashboard analytics ventes par armoire</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="icon included"></span>
+                        <span class="label"><strong>Recommandations merchandising IA</strong></span>
+                    </li>
+                </ul>
+
+                <div class="plan-cta-wrap">
+                    <a href="/register" class="plan-cta primary">Commencer avec Premium →</a>
+                    <p class="plan-subtext">Essai gratuit 7 jours · Sans engagement</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TRUST BADGES -->
+        <div class="guarantee-row">
+            <div class="guarantee-item">
+                <div class="gi-icon">✓</div>
+                Sans engagement — annulez à tout moment
+            </div>
+            <div class="guarantee-item">
+                <div class="gi-icon">✓</div>
+                Essai gratuit 7 jours sans carte
+            </div>
+            <div class="guarantee-item">
+                <div class="gi-icon">✓</div>
+                Paiement sécurisé Stripe
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+        <div class="faq-inner">
+            <h2 class="faq-title">Questions fréquentes</h2>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    Comment fonctionne l'essai gratuit de 7 jours ?
+                    <div class="toggle-icon">+</div>
+                </div>
+                <div class="faq-a">
+                    L'essai est activé automatiquement lors de votre inscription. Vous avez accès à toutes les fonctionnalités de la formule choisie pendant 7 jours — sans saisir votre carte bancaire. À la fin de l'essai, vous pouvez vous abonner ou votre compte retourne à un accès limité.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    Puis-je changer de formule à tout moment ?
+                    <div class="toggle-icon">+</div>
+                </div>
+                <div class="faq-a">
+                    Oui. Vous pouvez passer de Classique à Premium (ou l'inverse) à tout moment depuis votre espace client. Le changement prend effet immédiatement et la facturation est ajustée au pro-rata.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    Comment résilier mon abonnement ?
+                    <div class="toggle-icon">+</div>
+                </div>
+                <div class="faq-a">
+                    Vous pouvez résilier à tout moment depuis votre espace client, sans frais ni délai de préavis. Votre abonnement reste actif jusqu'à la fin de la période facturée.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    Est-ce que mes planogrammes sont conservés si je résilie ?
+                    <div class="toggle-icon">+</div>
+                </div>
+                <div class="faq-a">
+                    Oui. Vos planogrammes restent accessibles pendant 30 jours après la fin de votre abonnement. Vous pouvez à tout moment vous réabonner pour retrouver l'accès complet.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    Le paiement est-il sécurisé ?
+                    <div class="toggle-icon">+</div>
+                </div>
+                <div class="faq-a">
+                    Oui. Les paiements sont procesados par Stripe, leader mondial du paiement sécurisé. Vos coordonnées bancaires ne transitent jamais par nos serveurs. Toutes les transactions sont chiffrées.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    Une seule pharmacie — est-ce suffisant ?
+                    <div class="toggle-icon">+</div>
+                </div>
+                <div class="faq-a">
+                    Absolument. Les deux formules incluent un accès complet pour une pharmacie. Vous pouvez横向扩展 vers plusieurs établissements sur simple demande — nous年生 un tarif adapté à votre réseau.
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="footer-logo">ShelfRx <span class="logo-pill">BETA</span></div>
+                <p>Outil de planogramme pour pharmacies indépendantes. Créez en 5 minutes.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="/">Fonctionnalités</a>
+                    <a href="/pricing">Tarifs</a>
+                    <a href="/app">Démarrer</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="#">Centre d'aide</a>
+                    <a href="#">Contact</a>
+                    <a href="/pricing#faq">FAQ</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Légal</h4>
+                    <a href="#">CGV</a>
+                    <a href="#">Politique de confidentialité</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 ShelfRx. Tous droits réservés.</span>
+            <span>🇫🇷 100% made in France</span>
+        </div>
+    </footer>
+
+    <script>
+        function toggleFaq(el) {
+            el.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

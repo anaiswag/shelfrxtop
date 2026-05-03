@@ -1,0 +1,33 @@
+{
+  "name": "shelfrx-agent",
+  "version": "1.0.0",
+  "description": "Agent local ShelfRx — capture des mouvements de stock via protocole PN13",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "build:exe": "npx pkg index.js --targets node18-win-x64 --output dist/shelfrx-agent.exe",
+    "build:installer": "npm run build:exe && makensis installer.nsi"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "node-fetch": "^2.7.0",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "assets": [
+      "config.json"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "ShelfRx",
+  "license": "UNLICENSED"
+}

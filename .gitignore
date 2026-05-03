@@ -1,0 +1,12 @@
+node_modules/
+.env
+.DS_Store
+
+# Polsia safety (auto-injected)
+.env
+.env.*
+.claude/
+.claude.json*
+.tmp/
+projects/
+*.jsonl

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mes Planogrammes - ShelfRx</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --teal: #0D9488;
+            --teal-dark: #0F766E;
+            --teal-light: #CCFBF1;
+            --teal-50: #F0FDFA;
+            --amber: #F59E0B;
+            --amber-light: #FEF3C7;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --slate-900: #0F172A;
+            --slate-700: #334155;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-300: #CBD5E1;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --white: #FFFFFF;
+        }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--slate-700);
+            background: var(--slate-100);
+            min-height: 100vh;
+        }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; color: var(--slate-900); }
+
+        .topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--slate-200);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--slate-900);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .topbar-pill {
+            background: var(--teal);
+            color: white;
+            font-size: 0.6rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.65rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: var(--teal);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-secondary {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            border: 1px solid var(--slate-300);
+        }
+        .btn-secondary:hover { background: var(--slate-200); }
+        .btn-danger {
+            background: transparent;
+            color: var(--red);
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        .btn-danger:hover { background: var(--red-light); }
+        .btn-ghost {
+            background: transparent;
+            color: var(--teal);
+            padding: 0.4rem 0.75rem;
+        }
+        .btn-ghost:hover { background: var(--teal-50); }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+        .page-header p {
+            color: var(--slate-500);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .planogram-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .planogram-card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .planogram-card:hover {
+            border-color: var(--teal);
+            box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
+        }
+
+        .planogram-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .planogram-card-info h3 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .planogram-card-meta {
+            font-size: 0.8rem;
+            color: var(--slate-500);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .planogram-card-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.complete { background: var(--teal); }
+        .status-dot.draft { background: var(--amber); }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--slate-400);
+        }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .empty-state h3 {
+            color: var(--slate-700);
+            margin-bottom: 0.5rem;
+        }
+        .empty-state p {
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem;
+        }
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--slate-200);
+            border-top-color: var(--teal);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        #toast {
+            display: none;
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--slate-900);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Category badge */
+        .cat-badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            background: var(--teal-50);
+            color: var(--teal-dark);
+        }
+
+        @media (max-width: 768px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+            }
+            .topbar-logo {
+                font-size: 1rem;
+            }
+            .content {
+                padding: 1rem 0.75rem;
+                max-width: 100%;
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                margin-bottom: 1.25rem;
+            }
+            .page-header h1 {
+                font-size: 1.25rem;
+            }
+            .page-header p {
+                font-size: 0.85rem;
+            }
+            .planogram-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 1rem;
+            }
+            .planogram-card-info h3 {
+                font-size: 0.95rem;
+                white-space: normal;
+            }
+            .planogram-card-meta {
+                font-size: 0.75rem;
+                gap: 0.75rem;
+            }
+            .planogram-card-actions {
+                width: 100%;
+                justify-content: flex-end;
+                gap: 0.4rem;
+            }
+            .btn {
+                padding: 0.5rem 0.9rem;
+                font-size: 0.8rem;
+            }
+            .btn-danger, .btn-ghost {
+                padding: 0.4rem 0.7rem;
+                font-size: 0.75rem;
+            }
+            .cat-badge {
+                padding: 0.1rem 0.4rem;
+                font-size: 0.65rem;
+            }
+            .empty-state {
+                padding: 2rem 1rem;
+            }
+            .empty-state-icon {
+                font-size: 2.5rem;
+                margin-bottom: 0.75rem;
+            }
+            .empty-state h3 {
+                font-size: 1rem;
+                margin-bottom: 0.4rem;
+            }
+            .empty-state p {
+                font-size: 0.85rem;
+                margin-bottom: 1rem;
+            }
+            .status-dot {
+                width: 6px;
+                height: 6px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body { font-size: 14px; }
+            .topbar {
+                padding: 0.6rem 0.5rem;
+                flex-wrap: wrap;
+            }
+            .topbar-logo {
+                font-size: 0.9rem;
+                gap: 0.25rem;
+            }
+            .topbar-pill {
+                font-size: 0.5rem;
+                padding: 0.08rem 0.25rem;
+            }
+            .btn-primary {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.75rem;
+                width: auto;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .content {
+                padding: 0.75rem 0.5rem;
+            }
+            .page-header {
+                gap: 0.3rem;
+                margin-bottom: 1rem;
+            }
+            .page-header h1 {
+                font-size: 1.1rem;
+            }
+            .page-header p {
+                font-size: 0.8rem;
+            }
+            .planogram-grid {
+                gap: 0.75rem;
+            }
+            .planogram-card {
+                padding: 0.75rem;
+                gap: 0.5rem;
+                border-radius: 10px;
+            }
+            .planogram-card-info h3 {
+                font-size: 0.9rem;
+            }
+            .planogram-card-meta {
+                font-size: 0.7rem;
+                gap: 0.5rem;
+            }
+            .meta-item {
+                gap: 0.2rem;
+            }
+            .planogram-card-actions {
+                gap: 0.3rem;
+                flex-wrap: wrap;
+            }
+            .btn {
+                padding: 0.4rem 0.7rem;
+                font-size: 0.7rem;
+                min-height: 40px;
+            }
+            .btn-danger, .btn-ghost {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.7rem;
+                min-height: auto;
+            }
+            .cat-badge {
+                padding: 0.08rem 0.35rem;
+                font-size: 0.6rem;
+                border-radius: 3px;
+            }
+            .empty-state {
+                padding: 1.5rem 0.75rem;
+            }
+            .empty-state-icon {
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }
+            .empty-state h3 {
+                font-size: 0.95rem;
+                margin-bottom: 0.3rem;
+            }
+            .empty-state p {
+                font-size: 0.8rem;
+                margin-bottom: 0.75rem;
+            }
+            #toast {
+                bottom: 1rem;
+                left: 0.5rem;
+                right: 0.5rem;
+                width: auto;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <a class="topbar-logo" href="/">ShelfRx <span class="topbar-pill">BETA</span></a>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+            <a href="/app" class="btn btn-primary" id="newPlanogramBtn" style="text-decoration:none;">+ Nouveau planogramme</a>
+            <a href="/app/alerts" id="notifBell" style="display:none; position:relative; font-size:1.1rem; text-decoration:none; padding:0.3rem; border-radius:6px; color:var(--teal);" title="Alertes stock">🔔<span id="notifBadge" style="display:none; position:absolute; top:-2px; right:-2px; background:#EF4444; color:white; border-radius:50%; font-size:0.6rem; font-weight:700; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span></a>
+            <div id="userPill" style="display:none; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--slate-500); cursor:pointer; position:relative;" onclick="toggleDd()">
+                <span>&#128100;</span>
+                <span id="userPillName" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                <div id="userDd" style="display:none; position:absolute; top:calc(100% + 0.5rem); right:0; background:white; border:1px solid var(--slate-200); border-radius:10px; padding:0.5rem; min-width:180px; box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:100;">
+                    <div id="userDdEmail" style="padding:0.4rem 0.75rem; font-size:0.75rem; color:var(--slate-400); border-bottom:1px solid var(--slate-100); margin-bottom:0.25rem;"></div>
+                    <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/app/alerts'">🔔 Alertes stock</div>
+                    <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/app/analytics'">&#128200; Analytiques</div>
+                    <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/app/stock'">📦 Connexion Stock</div>
+                    <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="window.location.href='/billing'">&#128179; Abonnement</div>
+                    <div style="padding:0.5rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.82rem;" onmouseenter="this.style.background='var(--slate-100)'" onmouseleave="this.style.background=''" onclick="doLogout()">&#128275; Se déconnecter</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="trialBanner" style="display:none; padding:0.6rem 1.5rem; font-size:0.82rem; font-weight:500; text-align:center; position:sticky; top:57px; z-index:40;"></div>
+
+    <div id="toast"></div>
+
+    <div class="content">
+        <div class="page-header">
+            <div>
+                <h1>Mes planogrammes</h1>
+                <p>Vos dispositions de rayon sauvegardées. Cliquez sur &laquo;&nbsp;Charger&nbsp;&raquo; pour continuer l'édition.</p>
+            </div>
+        </div>
+
+        <div id="planogramList">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: var(--slate-400);">Chargement des planogrammes...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function getDeviceId() {
+        let id = localStorage.getItem('shelfrx_device_id');
+        if (!id) {
+            id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('shelfrx_device_id', id);
+        }
+        return id;
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    function escHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        const now = new Date();
+        const diff = now - d;
+
+        if (diff < 60000) return 'À l\'instant';
+        if (diff < 3600000) return Math.floor(diff / 60000) + ' min';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + ' h';
+        if (diff < 604800000) return Math.floor(diff / 86400000) + ' j';
+
+        return d.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    const categoryLabels = {
+        otc: 'Médicaments OTC',
+        vitamins: 'Vitamines',
+        skincare: 'Soins de la peau',
+        hygiene: 'Hygiène',
+        baby: 'Puériculture',
+        prescriptions: 'Ordonnances',
+        dental: 'Dentaire',
+        first_aid: 'Premiers secours',
+        other: 'Autre'
+    };
+
+    async function loadPlanograms() {
+        const container = document.getElementById('planogramList');
+        const deviceId = getDeviceId();
+
+        try {
+            const res = await fetch(`/api/projects?device_id=${encodeURIComponent(deviceId)}`);
+            const projects = await res.json();
+
+            if (!Array.isArray(projects) || projects.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">&#128203;</div>
+                        <h3>Aucun planogramme sauvegardé</h3>
+                        <p>Créez votre premier planogramme et sauvegardez-le pour le voir ici.</p>
+                        <a href="/app" class="btn btn-primary" style="text-decoration:none;">+ Créer un planogramme</a>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="planogram-grid">';
+            projects.forEach(p => {
+                const name = (p.name && p.name !== 'Untitled Project') ? escHtml(p.name) : '<span style="color:var(--slate-400);">Sans titre</span>';
+                const hasPlanogram = p.has_planogram;
+                const statusClass = hasPlanogram ? 'complete' : 'draft';
+                const statusLabel = hasPlanogram ? 'Terminé' : 'Brouillon';
+                const catLabel = p.category ? categoryLabels[p.category] || p.category : '';
+                const dims = p.shelf_width ? `${p.shelf_width}×${p.shelf_height} cm · ${p.num_shelves} niveaux` : '';
+
+                html += `
+                    <div class="planogram-card" id="card-${p.id}">
+                        <div class="planogram-card-info">
+                            <h3>${name}</h3>
+                            <div class="planogram-card-meta">
+                                <span class="meta-item">
+                                    <span class="status-dot ${statusClass}"></span>
+                                    ${statusLabel}
+                                </span>
+                                ${catLabel ? `<span class="cat-badge">${escHtml(catLabel)}</span>` : ''}
+                                ${dims ? `<span class="meta-item">${escHtml(dims)}</span>` : ''}
+                                <span class="meta-item">${formatDate(p.updated_at)}</span>
+                            </div>
+                        </div>
+                        <div class="planogram-card-actions">
+                            <a href="/app?load=${p.id}" class="btn btn-primary" style="text-decoration:none;">Charger</a>
+                            <button class="btn btn-danger" onclick="deletePlanogram('${p.id}')">Supprimer</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+        } catch (err) {
+            console.error('Load planograms failed:', err);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">&#9888;&#65039;</div>
+                    <h3>Échec du chargement des planogrammes</h3>
+                    <p>Une erreur est survenue. Veuillez actualiser la page.</p>
+                    <button class="btn btn-primary" onclick="loadPlanograms()">Réessayer</button>
+                </div>
+            `;
+        }
+    }
+
+    async function deletePlanogram(id) {
+        if (!confirm('Supprimer ce planogramme ? Cette action est irréversible.')) return;
+
+        try {
+            const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                const card = document.getElementById(`card-${id}`);
+                if (card) {
+                    card.style.transition = 'opacity 0.3s, transform 0.3s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(20px)';
+                    setTimeout(() => {
+                        card.remove();
+                        const grid = document.querySelector('.planogram-grid');
+                        if (grid && grid.children.length === 0) {
+                            loadPlanograms();
+                        }
+                    }, 300);
+                }
+                showToast('Planogramme supprimé');
+            } else {
+                showToast('Échec de la suppression du planogramme');
+            }
+        } catch (err) {
+            console.error('Delete failed:', err);
+            showToast('Échec de la suppression du planogramme');
+        }
+    }
+
+    // ========== AUTH ==========
+    let subscriptionStatus = 'trial';
+    let daysLeft = 7;
+
+    function toggleDd() {
+        const dd = document.getElementById('userDd');
+        dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+    }
+    document.addEventListener('click', e => {
+        const pill = document.getElementById('userPill');
+        if (pill && !pill.contains(e.target)) {
+            const dd = document.getElementById('userDd');
+            if (dd) dd.style.display = 'none';
+        }
+    });
+
+    async function doLogout() {
+        const token = localStorage.getItem('shelfrx_token');
+        if (token) fetch('/api/auth/logout', { method:'POST', headers:{'Authorization':'Bearer '+token} }).catch(()=>{});
+        localStorage.removeItem('shelfrx_token');
+        localStorage.removeItem('shelfrx_user');
+        window.location.href = '/login';
+    }
+
+    async function initAuth() {
+        const token = localStorage.getItem('shelfrx_token');
+        if (!token) { window.location.href = '/login?redirect=/app/planograms'; return false; }
+        try {
+            const r = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (r.status === 401) {
+                localStorage.removeItem('shelfrx_token');
+                window.location.href = '/login?redirect=/app/planograms';
+                return false;
+            }
+            if (r.ok) {
+                const data = await r.json();
+                subscriptionStatus = data.subscription_status;
+                daysLeft = data.days_left || 0;
+                const pill = document.getElementById('userPill');
+                if (pill) pill.style.display = 'flex';
+                const pillName = document.getElementById('userPillName');
+                if (pillName) pillName.textContent = data.pharmacy_name || data.name || data.email;
+                const pillEmail = document.getElementById('userDdEmail');
+                if (pillEmail) pillEmail.textContent = data.email;
+                // Trial banner
+                const banner = document.getElementById('trialBanner');
+                if (banner) {
+                    if (subscriptionStatus === 'trial' && daysLeft <= 3) {
+                        banner.style.background = 'var(--red-light)'; banner.style.color = '#b91c1c';
+                        banner.innerHTML = `⚠️ Essai expire dans <strong>${daysLeft} jour${daysLeft>1?'s':''}</strong> — <a href="https://buy.stripe.com/eVq9ATe6i35S1RSc9kdlz3R" style="color:inherit;font-weight:700;">Activer →</a>`;
+                        banner.style.display = 'block';
+                    } else if (subscriptionStatus === 'trial' && daysLeft <= 5) {
+                        banner.style.background = 'var(--amber-light)'; banner.style.color = '#92400e';
+                        banner.innerHTML = `⏳ Essai : <strong>${daysLeft} jours</strong> restants — <a href="https://buy.stripe.com/eVq9ATe6i35S1RSc9kdlz3R" style="color:inherit;font-weight:700;">S'abonner →</a>`;
+                        banner.style.display = 'block';
+                    } else if (subscriptionStatus !== 'trial' && subscriptionStatus !== 'active') {
+                        banner.style.background = 'var(--red-light)'; banner.style.color = '#b91c1c';
+                        banner.innerHTML = `🔒 Essai expiré — <a href="/billing" style="color:inherit;font-weight:700;">Activer l'abonnement pour créer des planogrammes →</a>`;
+                        banner.style.display = 'block';
+                        // Block new planogram button
+                        const newBtn = document.getElementById('newPlanogramBtn');
+                        if (newBtn) {
+                            newBtn.href = '/billing';
+                            newBtn.style.background = 'var(--slate-400)';
+                        }
+                    }
+                }
+            }
+        } catch(e) { console.warn('Auth failed:', e); }
+        return true;
+    }
+
+    // Notification badge
+    async function loadNotifBadge() {
+        try {
+            const token = localStorage.getItem('shelfrx_token');
+            if (!token) return;
+            const r = await fetch('/api/alerts/count', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!r.ok) return;
+            const data = await r.json();
+            const bell = document.getElementById('notifBell');
+            const badge = document.getElementById('notifBadge');
+            if (bell) bell.style.display = 'inline-flex';
+            if (badge && data.unread > 0) {
+                badge.textContent = data.unread > 99 ? '99+' : data.unread;
+                badge.style.display = 'inline-flex';
+            }
+        } catch(_) {}
+    }
+
+    // Init
+    (async () => {
+        const ok = await initAuth();
+        if (ok) { await loadPlanograms(); loadNotifBadge(); }
+    })();
+    </script>
+</body>
+</html>
