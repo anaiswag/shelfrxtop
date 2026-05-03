@@ -2470,38 +2470,38 @@ app.post('/api/agent/heartbeat', async (req, res) => {
 
 // Register page
 app.get('/register', (req, res) => {
-  res.sendFile(path.join(__dirname, 'register.html'));
+  res.sendFile(path.join(__dirname, 'public', 'register.html'));
 });
 
 // Login page
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // Billing page — plan selection & subscription activation
 app.get('/billing', (req, res) => {
-  res.sendFile(path.join(__dirname, 'billing.html'));
+  res.sendFile(path.join(__dirname, 'public', 'billing.html'));
 });
 
 // Billing success — Stripe redirect after subscription
 app.get('/billing/success', (req, res) => {
-  res.sendFile(path.join(__dirname, 'billing.html'));
+  res.sendFile(path.join(__dirname, 'public', 'billing.html'));
 });
 
 // Pricing page
 app.get('/pricing', (req, res) => {
-  res.sendFile(path.join(__dirname, 'pricing.html'));
+  res.sendFile(path.join(__dirname, 'public', 'pricing.html'));
 });
 
 // Admin dashboard
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Landing page
 app.get('/', (req, res) => {
   const slug = process.env.POLSIA_ANALYTICS_SLUG || '';
-  const htmlPath = path.join(__dirname, 'index.html');
+  const htmlPath = path.join(__dirname, 'public', 'index.html');
   if (fs.existsSync(htmlPath)) {
     let html = fs.readFileSync(htmlPath, 'utf8');
     html = html.replace('__POLSIA_SLUG__', slug);
@@ -2513,27 +2513,27 @@ app.get('/', (req, res) => {
 
 // App page (the builder)
 app.get('/app', (req, res) => {
-  res.sendFile(path.join(__dirname, 'app.html'));
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
 // My Planograms dashboard
 app.get('/app/planograms', (req, res) => {
-  res.sendFile(path.join(__dirname, 'planograms.html'));
+  res.sendFile(path.join(__dirname, 'public', 'planograms.html'));
 });
 
 // Analytics dashboard
 app.get('/app/analytics', (req, res) => {
-  res.sendFile(path.join(__dirname, 'analytics.html'));
+  res.sendFile(path.join(__dirname, 'public', 'analytics.html'));
 });
 
 // Shared planogram view
 app.get('/app/planogram/:shareId', (req, res) => {
-  res.sendFile(path.join(__dirname, 'shared.html'));
+  res.sendFile(path.join(__dirname, 'public', 'shared.html'));
 });
 
 // Stock onboarding page
 app.get('/app/stock', (req, res) => {
-  res.sendFile(path.join(__dirname, 'stock.html'));
+  res.sendFile(path.join(__dirname, 'public', 'stock.html'));
 });
 
 // ========== STOCK QUERY API ==========
@@ -3300,7 +3300,7 @@ app.put('/api/alerts/settings', requireAuth, async (req, res) => {
 
 // Catch-all: serve app for /app/* routes (client-side routing)
 app.get('/app/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'app.html'));
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
 // ========== HTTP + WEBSOCKET SERVER ==========
